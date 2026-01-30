@@ -1,0 +1,30 @@
+sample,donor_id,patient_group,disease,cell_type_original
+CK158,P1,myogenic,normal,Fibroblast
+CK159,P5,myogenic,myocardial infarction,Cardiomyocyte
+CK160,P3,myogenic,myocardial infarction,Cardiomyocyte
+CK161,P3,ischemic,myocardial infarction,Myeloid
+CK162,P4,fibrotic,myocardial infarction,Fibroblast
+CK163,P2,myogenic,myocardial infarction,Cardiomyocyte
+CK164,P3,myogenic,myocardial infarction,Myeloid
+CK165,P2,ischemic,myocardial infarction,Cardiomyocyte
+CK356,P6,myogenic,myocardial infarction,Cardiomyocyte
+CK357,P7,myogenic,normal,Fibroblast
+CK358,P8,myogenic,normal,Fibroblast
+CK359,P2,myogenic,myocardial infarction,Fibroblast
+CK360,P9,myogenic,myocardial infarction,Cardiomyocyte
+CK361,P10,ischemic,myocardial infarction,Fibroblast
+CK362,P11,myogenic,myocardial infarction,Endothelial
+CK363,P9,ischemic,myocardial infarction,Endothelial
+CK364,P12,myogenic,myocardial infarction,Fibroblast
+CK365,P13,ischemic,myocardial infarction,Myeloid
+CK366,P14,fibrotic,myocardial infarction,Cardiomyocyte
+CK367,P18,fibrotic,myocardial infarction,Endothelial
+CK368,P19,fibrotic,myocardial infarction,Endothelial
+CK369,P16,ischemic,myocardial infarction,Fibroblast
+CK370,P20,fibrotic,myocardial infarction,Myeloid
+CK371,P15,ischemic,myocardial infarction,Myeloid
+CK372,P9,ischemic,myocardial infarction,Fibroblast
+CK373,P15,ischemic,myocardial infarction,Fibroblast
+CK374,P17,myogenic,normal,Myeloid
+CK375,P9,ischemic,myocardial infarction,Pericyte
+CK376,P16,ischemic,myocardial infarction,Fibroblast
