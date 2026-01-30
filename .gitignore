@@ -1,0 +1,27 @@
+# Papers and references (large PDFs)
+papers/
+
+# Data files
+*.h5ad
+*.rds
+*.RData
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
