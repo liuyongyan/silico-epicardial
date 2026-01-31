@@ -1,10 +1,14 @@
 # Papers and references (large PDFs)
 papers/
 
-# Data files
+# Data directory (large files, download separately)
+data/
+
+# Data files (backup patterns)
 *.h5ad
 *.rds
 *.RData
+*.csv
 
 # Python
 __pycache__/

@@ -64,6 +64,10 @@ epicardial-target-discovery/
 │   │       ├── 77df1b04-*.h5ad          # PERIHEART (2.6GB, 392,819 cells)
 │   │       └── 8e1afde5-*.h5ad          # CAREBANK (1.5GB, 221,756 cells)
 │   ├── processed/
+│   │   ├── epicardial_all_merged.h5ad     # 59,431 cells (merged, log-normalized)
+│   │   ├── epicardial_periheart_log.h5ad  # 28,851 cells (log-normalized)
+│   │   ├── epicardial_carebank_log.h5ad   # 20,493 cells (log-normalized)
+│   │   ├── epicardial_kuppe.h5ad          # 10,087 cells (log-normalized)
 │   │   ├── kuppe_cell_metadata.csv
 │   │   └── kuppe_gene_metadata.csv
 │   └── references/
@@ -89,10 +93,16 @@ epicardial-target-discovery/
   - Linna-Kuosmanen: **~49,000 mesothelial cells** (7-9% of total) - best source!
 - [x] Verify epicardial markers present: WT1, TBX18, ALDH1A2, UPK3B, MSLN
 - [x] Set up Python-based workflow (scanpy/anndata)
+- [x] Extract epicardial cells from all datasets:
+  - Linna-Kuosmanen: filtered by `cell_type == 'mesothelial cell'` (49,344 cells)
+  - Kuppe: filtered by marker score (95th percentile) + adipocyte annotation (10,087 cells)
+- [x] Harmonize normalization across datasets:
+  - Discovered: Linna-Kuosmanen uses CPM, Kuppe uses log1p(CPM)
+  - Applied log1p to Linna-Kuosmanen for consistency
+  - Verified score comparability (ratio 1.40x)
+- [x] Merge all datasets into `epicardial_all_merged.h5ad` (59,431 cells, 28,380 genes)
 
 ### Next Steps
-
-- [ ] Extract and merge epicardial/mesothelial cells from all datasets
 - [ ] Define proliferation and EMT signatures
 - [ ] Run NicheNet/LIANA with sender cells → epicardium
 - [ ] Verify FGF10 ranks in top ligands (positive control)
@@ -158,43 +168,6 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 - scVI
 - BBKNN
 
-```python
-import scanpy as sc
-import anndata as ad
-
-# Load data (use backed mode for large files)
-adata = ad.read_h5ad("data.h5ad", backed='r')
-
-# For in-memory processing
-adata = ad.read_h5ad("data.h5ad")
-
-# QC metrics
-adata.var['mt'] = adata.var_names.str.startswith('MT-')
-sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
-
-# Filter
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_cells(adata, max_genes=6000)
-adata = adata[adata.obs.pct_counts_mt < 15, :]
-
-# Normalize
-sc.pp.normalize_total(adata, target_sum=1e4)
-sc.pp.log1p(adata)
-
-# Variable genes and PCA
-sc.pp.highly_variable_genes(adata, n_top_genes=2000)
-sc.tl.pca(adata)
-
-# Batch correction with Harmony
-import scanpy.external as sce
-sce.pp.harmony_integrate(adata, key='batch')
-
-# Clustering
-sc.pp.neighbors(adata, use_rep='X_pca_harmony')
-sc.tl.umap(adata)
-sc.tl.leiden(adata, resolution=0.5)
-```
-
 ### 3.3 Epicardial Cell Identification
 
 **Canonical epicardial markers:**
@@ -214,25 +187,53 @@ sc.tl.leiden(adata, resolution=0.5)
 - ACTA2 (alpha-SMA)
 - VIM (Vimentin)
 
-```python
-# Score cells for epicardial identity
-epicardial_markers = ['WT1', 'TBX18', 'ALDH1A2', 'UPK3B', 'MSLN']
+**Cell selection methods:**
+- Linna-Kuosmanen: `cell_type == 'mesothelial cell'`
+- Kuppe: `epicardial_score > 95th percentile` (using sc.tl.score_genes)
 
-# If using gene symbols
-sc.tl.score_genes(adata, epicardial_markers, score_name='epicardial_score')
+### 3.4 Normalization Harmonization
 
-# Subset epicardial population (by annotation or score)
-# For Linna-Kuosmanen data:
-epicardial = adata[adata.obs['cell_type'] == 'mesothelial cell']
+**Issue Discovered:** The two data sources use different normalization methods:
 
-# Or by score threshold:
-threshold = adata.obs['epicardial_score'].quantile(0.95)
-epicardial = adata[adata.obs['epicardial_score'] > threshold]
+| Dataset | Original Format | Expression Range | Notes |
+|---------|----------------|------------------|-------|
+| **Linna-Kuosmanen** | CPM/TPM (linear) | 0 - 1353 | No log transformation |
+| **Kuppe** | log1p(CPM) | 0 - 7.7 | `X_approximate_distribution: normal` |
 
-# Subcluster to identify states
-sc.pp.neighbors(epicardial, n_neighbors=15)
-sc.tl.leiden(epicardial, resolution=0.3)
-```
+**Verification:** Applying `log1p` to Linna-Kuosmanen data produces range (0 - 7.2), matching Kuppe.
+
+**Solution:** Applied `log1p` transformation to Linna-Kuosmanen datasets for consistency.
+
+**Epicardial Score Comparison After Normalization:**
+
+| Dataset | Cells | Mean Score | Median | Std | 95th % |
+|---------|-------|------------|--------|-----|--------|
+| PERIHEART | 28,851 | 0.8664 | 0.8763 | 0.5003 | 1.6881 |
+| CAREBANK | 20,493 | 0.9254 | 0.9537 | 0.4983 | 1.7108 |
+| Kuppe_MI | 10,087 | 0.6590 | 0.6287 | 0.2071 | 1.0155 |
+
+**Individual Marker Expression (Mean):**
+
+| Dataset | WT1 | TBX18 | ALDH1A2 | UPK3B |
+|---------|-----|-------|---------|-------|
+| PERIHEART | 0.95 | 0.83 | 1.12 | 0.57 |
+| CAREBANK | 1.18 | 1.00 | 1.16 | 0.36 |
+| Kuppe_MI | 0.34 | 0.89 | 1.39 | 0.01 |
+
+**Interpretation:**
+- Max/Min score ratio = **1.40x** (acceptable for combined analysis)
+- Linna-Kuosmanen datasets show higher WT1/UPK3B (true epicardial annotations)
+- Kuppe shows higher ALDH1A2 (marker used for selection)
+- UPK3B nearly absent in Kuppe (0.8% cells express vs 23-33% in Linna-Kuosmanen)
+
+**Note on Marker Selection:**
+- **MSLN not used**: Not present in Kuppe dataset (28,380 genes vs 35,477 in Linna-Kuosmanen)
+- **UPK3B low in Kuppe**: Kuppe cells selected by marker score contain many EMT-derived fibroblast-like cells that lost UPK3B expression; Linna-Kuosmanen cells are true mesothelial cells with explicit annotations
+
+**Normalized Files:**
+- `data/processed/epicardial_periheart_log.h5ad`
+- `data/processed/epicardial_carebank_log.h5ad`
+- `data/processed/epicardial_kuppe.h5ad` (already log-normalized)
 
 ---
 
@@ -249,16 +250,6 @@ sc.tl.leiden(epicardial, resolution=0.3)
 - CCNA2 (Cyclin A2)
 - MCM2, MCM6 (Minichromosome maintenance)
 - AURKA, AURKB (Aurora kinases)
-
-```python
-proliferation_genes = ['MKI67', 'TOP2A', 'PCNA', 'CDK1', 'CCNB1',
-                       'CCNB2', 'CCNA2', 'MCM2', 'MCM6', 'AURKA']
-
-sc.tl.score_genes(adata, proliferation_genes, score_name='proliferation_score')
-
-# Or use cell cycle scoring
-sc.tl.score_genes_cell_cycle(adata, s_genes=s_genes, g2m_genes=g2m_genes)
-```
 
 ### 4.2 EMT Signature
 
@@ -280,17 +271,7 @@ sc.tl.score_genes_cell_cycle(adata, s_genes=s_genes, g2m_genes=g2m_genes)
 - TJP1 (ZO-1)
 - OCLN (Occludin)
 
-```python
-emt_up_genes = ['SNAI1', 'SNAI2', 'TWIST1', 'ZEB1', 'ZEB2',
-                'VIM', 'CDH2', 'FN1', 'ACTA2']
-emt_down_genes = ['CDH1', 'CLDN1', 'TJP1', 'OCLN']
-
-sc.tl.score_genes(adata, emt_up_genes, score_name='emt_up_score')
-sc.tl.score_genes(adata, emt_down_genes, score_name='emt_down_score')
-
-# Combined EMT score
-adata.obs['emt_score'] = adata.obs['emt_up_score'] - adata.obs['emt_down_score']
-```
+**EMT score**: `emt_up_score - emt_down_score`
 
 ### 4.3 Temporal Labeling
 
@@ -323,86 +304,25 @@ Curated resources to merge:
 
 LIANA combines multiple methods (CellPhoneDB, NATMI, Connectome, etc.) and provides consensus rankings.
 
-```python
-import liana as li
+**Key function**: `li.mt.rank_aggregate(adata, groupby='cell_type', resource_name='consensus', expr_prop=0.1)`
 
-# Prepare data
-adata.raw = adata  # store raw counts
-sc.pp.normalize_total(adata)
-sc.pp.log1p(adata)
-
-# Run LIANA with multiple methods
-li.mt.rank_aggregate(
-    adata,
-    groupby='cell_type',
-    resource_name='consensus',  # or 'cellphonedb', 'celltalkdb'
-    expr_prop=0.1,
-    verbose=True
-)
-
-# Results stored in adata.uns['liana_res']
-liana_results = adata.uns['liana_res']
-
-# Filter for epicardial/mesothelial as receiver
-epi_interactions = liana_results[liana_results['target'] == 'mesothelial cell']
-
-# Top ligand-receptor pairs
-top_pairs = epi_interactions.nsmallest(50, 'magnitude_rank')
-
-# Check if FGF10-FGFR2 is in top pairs (positive control)
-fgf10_pairs = epi_interactions[epi_interactions['ligand_complex'].str.contains('FGF10')]
-print(fgf10_pairs)
-```
+**Output**: Filter `adata.uns['liana_res']` for `target == 'mesothelial cell'`, rank by `magnitude_rank`
 
 ### 5.3 NicheNet Analysis (R Alternative)
 
 NicheNet predicts which ligands best explain transcriptional changes in receiver cells.
 
-```r
-library(nichenetr)
+**Required data** (from Zenodo):
+- `ligand_target_matrix.rds`
+- `lr_network.rds`
 
-# Download required matrices
-ligand_target_matrix <- readRDS(url("https://zenodo.org/record/3260758/files/ligand_target_matrix.rds"))
-lr_network <- readRDS(url("https://zenodo.org/record/3260758/files/lr_network.rds"))
-
-# Define sender and receiver
-sender_celltypes <- c("Cardiomyocyte", "Macrophage", "Fibroblast", "Endothelial")
-receiver_celltype <- "Epicardial"
-
-# Get expressed genes
-expressed_genes_receiver <- get_expressed_genes(receiver_celltype, seurat_obj, pct = 0.10)
-
-# Define gene set of interest (activation signature)
-geneset_oi <- c("MKI67", "TOP2A", "VIM", "SNAI1", "SNAI2", "TWIST1",
-                "POSTN", "COL1A1", "FN1", "ACTA2")
-
-# Predict ligand activities
-ligand_activities <- predict_ligand_activities(
-  geneset = geneset_oi,
-  background_expressed_genes = expressed_genes_receiver,
-  ligand_target_matrix = ligand_target_matrix,
-  potential_ligands = potential_ligands
-)
-
-# Rank ligands - FGF10 should appear in top if working correctly
-top_ligands <- ligand_activities %>%
-  arrange(-pearson) %>%
-  head(20)
-```
+**Key function**: `predict_ligand_activities(geneset, ligand_target_matrix, potential_ligands)`
 
 ### 5.4 Map Ligands to Receptors
 
-```python
-# From LIANA results, extract receptor partners for top ligands
-top_ligands = ['FGF10', 'PDGFA', 'TGFB1', 'WNT5A', 'HGF']
+**Priority ligands**: FGF10, PDGFA, TGFB1, WNT5A, HGF
 
-receptor_mapping = liana_results[
-    liana_results['ligand_complex'].isin(top_ligands)
-][['ligand_complex', 'receptor_complex', 'magnitude_rank']].drop_duplicates()
-
-# Priority receptors for FGF10:
-# FGFR1, FGFR2 (specifically FGFR2b isoform), FGFR3
-```
+**FGF10 receptors**: FGFR1, FGFR2 (specifically FGFR2b isoform), FGFR3
 
 ---
 
@@ -460,176 +380,19 @@ Fine-tuning enables cell state classification and **in silico perturbation**.
 - Python 3.8+
 - PyTorch, Transformers, Datasets libraries
 
-```bash
-pip install transformers datasets torch
-pip install geneformer  # or clone from GitHub
-```
+**Installation**: `pip install transformers datasets torch geneformer`
 
-**Step 1: Prepare Data**
+**Workflow:**
 
-```python
-import scanpy as sc
-from geneformer import TranscriptomeTokenizer
+1. **Prepare Data**: Use `TranscriptomeTokenizer` to tokenize transcriptomes. Label cells as 0 (quiescent) or 1 (activated). Gene names must be Ensembl IDs.
 
-# Load epicardial cells from processed dataset
-adata = sc.read_h5ad("epicardial_cells.h5ad")
+2. **Fine-tune**: Load `ctheodoris/Geneformer`, fine-tune with `BertForSequenceClassification` (num_labels=2). Recommended: 5 epochs, batch_size=8, warmup_steps=500.
 
-# Add cell state labels
-# 0 = quiescent (sham/control), 1 = activated (post-MI day 3-7)
-adata.obs['activation_state'] = adata.obs['condition'].map({
-    'control': 0, 'sham': 0,
-    'MI_day3': 1, 'MI_day7': 1,
-    'ischemic': 1, 'border': 1
-})
+3. **In Silico Perturbation**: Use `InSilicoPerturber` with `perturb_type="delete"` to test candidate receptors (FGFR2, FGFR1, PDGFRA, PDGFRB, TGFBR1/2, MET, IGF1R, FZD1/2/7, BMPR1A/2).
 
-# Ensure gene names are Ensembl IDs (required by Geneformer)
-# CellxGene data already uses Ensembl IDs as var_names
+4. **Rank Results**: Calculate `activation_effect = prob_class1_perturbed - prob_class1_original`. Most negative = most important for activation.
 
-# Tokenize transcriptomes
-tokenizer = TranscriptomeTokenizer(
-    custom_attr_name_dict={"cell_type": "cell_type"},
-    nproc=4
-)
-tokenized_data = tokenizer.tokenize_data(
-    adata,
-    output_directory="./tokenized_data/",
-    output_prefix="epicardial"
-)
-```
-
-**Step 2: Fine-tune for Cell State Classification**
-
-```python
-from transformers import BertForSequenceClassification, Trainer, TrainingArguments
-from datasets import load_from_disk
-from sklearn.metrics import accuracy_score, f1_score
-import numpy as np
-
-# Load tokenized data
-dataset = load_from_disk("./tokenized_data/epicardial.dataset")
-dataset = dataset.train_test_split(test_size=0.2, seed=42)
-
-# Load pretrained Geneformer
-model = BertForSequenceClassification.from_pretrained(
-    "ctheodoris/Geneformer",
-    num_labels=2,  # quiescent vs activated
-    output_attentions=False,
-    output_hidden_states=False
-)
-
-# Training arguments
-training_args = TrainingArguments(
-    output_dir="./geneformer_epicardial/",
-    num_train_epochs=5,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    warmup_steps=500,
-    weight_decay=0.01,
-    logging_dir="./logs/",
-    logging_steps=100,
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
-    load_best_model_at_end=True,
-    metric_for_best_model="accuracy"
-)
-
-# Define metrics
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = np.argmax(pred.predictions, axis=1)
-    return {
-        "accuracy": accuracy_score(labels, preds),
-        "f1": f1_score(labels, preds)
-    }
-
-# Train
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=dataset["train"],
-    eval_dataset=dataset["test"],
-    compute_metrics=compute_metrics
-)
-trainer.train()
-```
-
-**Step 3: In Silico Perturbation**
-
-```python
-from geneformer import InSilicoPerturber
-
-# Initialize perturber with fine-tuned model
-perturber = InSilicoPerturber(
-    perturb_type="delete",  # or "overexpress"
-    model_type="CellClassifier",
-    num_classes=2,
-    emb_mode="cell",
-    filter_data={"cell_type": ["epicardial"]}
-)
-
-# Define genes to perturb (candidate receptors)
-candidate_receptors = [
-    "FGFR2", "FGFR1", "PDGFRA", "PDGFRB",
-    "TGFBR1", "TGFBR2", "MET", "IGF1R",
-    "FZD1", "FZD2", "FZD7", "BMPR1A", "BMPR2"
-]
-
-# Run perturbation analysis
-perturber.perturb_data(
-    model_directory="./geneformer_epicardial/",
-    input_data_file="./tokenized_data/epicardial.dataset",
-    output_directory="./perturbation_results/",
-    genes_to_perturb=candidate_receptors
-)
-
-# Receptors whose deletion PREVENTS activation (shifts cells toward quiescent)
-# are potential therapeutic targets for ACTIVATING epicardium
-```
-
-**Step 4: Rank Receptors by Perturbation Effect**
-
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load perturbation results
-results = pd.read_csv("./perturbation_results/perturbation_stats.csv")
-
-# Calculate effect size: shift toward quiescent state upon deletion
-# Negative values = receptor is required for activation
-results['activation_effect'] = results['prob_class1_perturbed'] - results['prob_class1_original']
-
-# Rank by effect (most negative = most important for activation)
-results_sorted = results.sort_values('activation_effect')
-
-# Visualize
-plt.figure(figsize=(10, 8))
-plt.barh(results_sorted['gene'], results_sorted['activation_effect'])
-plt.xlabel('Change in Activation Probability (Deletion Effect)')
-plt.ylabel('Receptor Gene')
-plt.title('In Silico Perturbation: Receptor Importance for Epicardial Activation')
-plt.axvline(x=0, color='k', linestyle='--')
-plt.tight_layout()
-plt.savefig('receptor_perturbation_effects.png', dpi=300)
-
-# Top candidates: receptors with most negative activation_effect
-top_receptors = results_sorted.head(10)
-print("Top receptor candidates (deletion inhibits activation):")
-print(top_receptors[['gene', 'activation_effect']])
-```
-
-**Step 5: Validate Positive Control**
-
-```python
-# FGFR2 should show strong negative effect (deletion prevents activation)
-fgfr2_result = results[results['gene'] == 'FGFR2']
-print(f"FGFR2 perturbation effect: {fgfr2_result['activation_effect'].values[0]}")
-
-# If FGFR2 is not in top 10, investigate:
-# - Check FGFR2 expression in epicardial cells
-# - Verify correct gene ID mapping
-# - Consider FGFR1 as alternative (may compensate)
-```
+5. **Validate**: FGFR2 deletion should show strong negative effect (prevents activation).
 
 ### 6.4 Model Evaluation
 
