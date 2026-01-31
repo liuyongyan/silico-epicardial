@@ -545,11 +545,15 @@ Check if top candidates converge on expected pathways:
 
 11. Jin S, et al. (2021) "Inference and analysis of cell-cell communication using CellChat" *Nat Commun* 12:1088
 
+12. Dimitrov D, et al. (2022) "Comparison of methods and resources for cell-cell communication inference from single-cell RNA-Seq data" *Nat Commun* 13:3224 — **LIANA**
+
+13. Efremova M, et al. (2020) "CellPhoneDB: inferring cell–cell communication from combined expression of multi-subunit ligand–receptor complexes" *Nat Protoc* 15:1484-1506
+
 ### Epicardial Biology
 
-12. Cao J, Poss KD (2018) "The epicardium as a hub for heart regeneration" *Nat Rev Cardiol* 15:631-647
+14. Cao J, Poss KD (2018) "The epicardium as a hub for heart regeneration" *Nat Rev Cardiol* 15:631-647
 
-13. Wang S, et al. (2015) "Epicardial regeneration is guided by cardiac outflow tract and Hedgehog signalling" *Nature* 522:226-230
+15. Wang S, et al. (2015) "Epicardial regeneration is guided by cardiac outflow tract and Hedgehog signalling" *Nature* 522:226-230
 
 ---
 
