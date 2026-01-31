@@ -320,7 +320,21 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 | PERIHEART | -0.05 | 10,391 | 6,439 |
 | CAREBANK | -0.20 | 11,742 | 566 |
 
-### 4.4 Temporal Labeling (Not Used)
+### 4.4 Prepare Full Communication Dataset
+
+Extract sender cells from raw data and merge with epicardial cells for L-R analysis.
+
+**Sender cell types** (from Kuppe dataset):
+- Cardiomyocytes
+- Macrophages / Myeloid cells
+- Fibroblasts
+- Endothelial cells
+
+**Output**: `full_communication_dataset.h5ad`
+- Contains both sender and receiver (epicardial) cells
+- Used by LIANA and NicheNet in Phase 3
+
+### 4.5 Temporal Labeling (Not Used)
 
 > Temporal labeling was not used because the available datasets lack precise timepoint annotations. Cell states were classified using condition-based and score-based methods instead (see 4.3).
 
@@ -336,17 +350,12 @@ Step 1: DEG Analysis (pyDESeq2)
   └── Compare: activated vs quiescent
   └── Output: differentially expressed genes
 
-Step 2: Prepare Full Dataset
-  └── Extract sender cells from raw data (Cardiomyocytes, Macrophages, Fibroblasts, Endothelial)
-  └── Merge with epicardial cells (receiver)
-  └── Output: full_dataset_for_liana.h5ad
-
-Step 3: LIANA Analysis
-  └── Input: full dataset (sender + receiver cells)
+Step 2: LIANA Analysis
+  └── Input: full_communication_dataset.h5ad (prepared in Phase 2)
   └── No DEG required
   └── Output: L-R pair rankings
 
-Step 4: NicheNet Analysis
+Step 3: NicheNet Analysis
   └── Input: DEG geneset + full dataset
   └── Predict ligands causing DEG upregulation
   └── Output: Ligand activity rankings
@@ -366,7 +375,7 @@ Find genes differentially expressed between activated and quiescent epicardial c
 
 LIANA integrates multiple methods (CellPhoneDB, NATMI, Connectome, etc.) for consensus L-R rankings.
 
-**Prerequisites**: Full dataset with both sender and receiver cells
+**Input**: `full_communication_dataset.h5ad` (Phase 2 output, contains sender + receiver cells)
 
 **Key function**: `li.mt.rank_aggregate(adata, groupby='cell_type', resource_name='consensus', expr_prop=0.1)`
 
@@ -376,9 +385,9 @@ LIANA integrates multiple methods (CellPhoneDB, NATMI, Connectome, etc.) for con
 
 NicheNet predicts which ligands from sender cells best explain transcriptional changes in receiver cells.
 
-**Prerequisites**:
-- DEG geneset from Step 1
-- Full dataset with sender + receiver cells
+**Input**:
+- DEG geneset from 5.2
+- `full_communication_dataset.h5ad` (Phase 2 output)
 
 **Required data** (from Zenodo):
 - `ligand_target_matrix.rds`
