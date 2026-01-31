@@ -328,31 +328,57 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 
 ## 5. Phase 3: Ligand-Receptor Analysis
 
-### 5.1 Interaction Database Resources
+### 5.1 Workflow Overview
 
-Curated resources to merge:
-- [CellPhoneDB](https://www.cellphonedb.org/)
-- [CellTalkDB](http://tcm.zju.edu.cn/celltalkdb/)
-- [NicheNet](https://github.com/saeyslab/nichenetr) ligand-target matrix
-- NATMI database
-- Ramilowski et al. ligand-receptor pairs
+```
+Step 1: DEG Analysis (pyDESeq2)
+  └── Input: epicardial_with_states.h5ad
+  └── Compare: activated vs quiescent
+  └── Output: differentially expressed genes
 
-**Filter criteria:**
-- Receptors expressed in epicardial cells (mean > 0.1, pct > 10%)
-- Ligands expressed in sender populations
-- Documented signaling activity
+Step 2: Prepare Full Dataset
+  └── Extract sender cells from raw data (Cardiomyocytes, Macrophages, Fibroblasts, Endothelial)
+  └── Merge with epicardial cells (receiver)
+  └── Output: full_dataset_for_liana.h5ad
 
-### 5.2 LIANA Analysis (Python, Recommended)
+Step 3: LIANA Analysis
+  └── Input: full dataset (sender + receiver cells)
+  └── No DEG required
+  └── Output: L-R pair rankings
 
-LIANA combines multiple methods (CellPhoneDB, NATMI, Connectome, etc.) and provides consensus rankings.
+Step 4: NicheNet Analysis
+  └── Input: DEG geneset + full dataset
+  └── Predict ligands causing DEG upregulation
+  └── Output: Ligand activity rankings
+```
+
+### 5.2 DEG Analysis (pyDESeq2)
+
+Find genes differentially expressed between activated and quiescent epicardial cells.
+
+**Input**: `epicardial_with_states.h5ad` (Phase 2 output)
+
+**Comparison**: `final_state == 'activated'` vs `final_state == 'quiescent'`
+
+**Output**: Upregulated genes in activated cells → used as geneset for NicheNet
+
+### 5.3 LIANA Analysis
+
+LIANA integrates multiple methods (CellPhoneDB, NATMI, Connectome, etc.) for consensus L-R rankings.
+
+**Prerequisites**: Full dataset with both sender and receiver cells
 
 **Key function**: `li.mt.rank_aggregate(adata, groupby='cell_type', resource_name='consensus', expr_prop=0.1)`
 
 **Output**: Filter `adata.uns['liana_res']` for `target == 'mesothelial cell'`, rank by `magnitude_rank`
 
-### 5.3 NicheNet Analysis (R Alternative)
+### 5.4 NicheNet Analysis
 
-NicheNet predicts which ligands best explain transcriptional changes in receiver cells.
+NicheNet predicts which ligands from sender cells best explain transcriptional changes in receiver cells.
+
+**Prerequisites**:
+- DEG geneset from Step 1
+- Full dataset with sender + receiver cells
 
 **Required data** (from Zenodo):
 - `ligand_target_matrix.rds`
@@ -360,11 +386,25 @@ NicheNet predicts which ligands best explain transcriptional changes in receiver
 
 **Key function**: `predict_ligand_activities(geneset, ligand_target_matrix, potential_ligands)`
 
-### 5.4 Map Ligands to Receptors
+### 5.5 Expected Results
 
 **Priority ligands**: FGF10, PDGFA, TGFB1, WNT5A, HGF
 
 **FGF10 receptors**: FGFR1, FGFR2 (specifically FGFR2b isoform), FGFR3
+
+**Validation**: FGF10-FGFR2 should rank highly in both LIANA and NicheNet results
+
+### 5.6 Backup Resources
+
+Additional L-R databases (not used in main analysis):
+- [CellTalkDB](http://tcm.zju.edu.cn/celltalkdb/)
+- NATMI database
+- Ramilowski et al. ligand-receptor pairs
+
+**Filter criteria** (if using raw databases):
+- Receptors expressed in epicardial cells (mean > 0.1, pct > 10%)
+- Ligands expressed in sender populations
+- Documented signaling activity
 
 ---
 
