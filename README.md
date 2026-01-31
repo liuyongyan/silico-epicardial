@@ -65,6 +65,7 @@ epicardial-target-discovery/
 │   │       └── 8e1afde5-*.h5ad          # CAREBANK (1.5GB, 221,756 cells)
 │   ├── processed/
 │   │   ├── epicardial_all_merged.h5ad     # 59,431 cells (merged, log-normalized)
+│   │   ├── epicardial_with_states.h5ad    # 59,431 cells (with cell state labels)
 │   │   ├── epicardial_periheart_log.h5ad  # 28,851 cells (log-normalized)
 │   │   ├── epicardial_carebank_log.h5ad   # 20,493 cells (log-normalized)
 │   │   ├── epicardial_kuppe.h5ad          # 10,087 cells (log-normalized)
@@ -72,13 +73,15 @@ epicardial-target-discovery/
 │   │   └── kuppe_gene_metadata.csv
 │   └── references/
 ├── scripts/
-│   └── 01_preprocessing/
-│       ├── analyze_kuppe.py
-│       ├── extract_epicardial_simple.py
-│       ├── extract_kuppe_epicardial.py
-│       ├── compare_epicardial_scores.py
-│       ├── normalize_and_compare.py
-│       └── merge_epicardial_datasets.py
+│   ├── 01_preprocessing/
+│   │   ├── analyze_kuppe.py
+│   │   ├── extract_epicardial_simple.py
+│   │   ├── extract_kuppe_epicardial.py
+│   │   ├── compare_epicardial_scores.py
+│   │   ├── normalize_and_compare.py
+│   │   └── merge_epicardial_datasets.py
+│   └── 02_cell_states/
+│       └── classify_cell_states.py
 └── papers/
 ```
 
@@ -100,9 +103,13 @@ epicardial-target-discovery/
   - Applied log1p to Linna-Kuosmanen for consistency
   - Verified score comparability (ratio 1.40x)
 - [x] Merge all datasets into `epicardial_all_merged.h5ad` (59,431 cells, 28,380 genes)
+- [x] Phase 2: Define cell states with dual-method validation:
+  - Method 1: Condition-based (disease/spatial zone annotations)
+  - Method 2: Score-based (EMT + proliferation signatures)
+  - Cross-validation agreement: 66.8%
+  - Output: `epicardial_with_states.h5ad`
 
 ### Next Steps
-- [ ] Define proliferation and EMT signatures
 - [ ] Run NicheNet/LIANA with sender cells → epicardium
 - [ ] Verify FGF10 ranks in top ligands (positive control)
 - [ ] Fine-tune Geneformer for quiescent vs activated classification
@@ -272,14 +279,41 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 
 **EMT score**: `emt_up_score - emt_down_score`
 
-### 4.3 Temporal Labeling
+### 4.3 Cell State Classification Results
 
-Label cells by:
-- Timepoint post-MI (Day 0, 1, 3, 7, 14, etc.)
-- Spatial zone (ischemic, border, remote)
-- Activation state (quiescent vs activated)
+**Dual-method approach:**
+1. **Condition-based**: Using `disease` and `major_labl` (spatial zone) annotations
+2. **Score-based**: Using proliferation (9 genes) + EMT (17 genes) signatures
 
-**Target transition**: Quiescent (sham/day 0) → Activated (day 3-7)
+**Cross-validation results:**
+
+| Metric | Value |
+|--------|-------|
+| Agreement rate | 66.8% |
+| Activated (condition) EMT score | +0.171 |
+| Quiescent (condition) EMT score | -0.113 |
+
+**Consensus state distribution:**
+
+| State | Count | Description |
+|-------|-------|-------------|
+| quiescent | 22,951 | Both methods agree: normal |
+| activated | 6,162 | Both methods agree: activated |
+| early_activated | 8,684 | Condition=MI but low scores |
+| pre_activated | 5,780 | Condition=normal but high scores |
+| ambiguous | 15,854 | Other disease conditions |
+
+**Per-dataset activation scores:**
+
+| Dataset | Mean Score | Quiescent | Activated |
+|---------|------------|-----------|-----------|
+| Kuppe_MI | +0.56 | 818 | 7,841 |
+| PERIHEART | -0.05 | 10,391 | 6,439 |
+| CAREBANK | -0.20 | 11,742 | 566 |
+
+### 4.4 Temporal Labeling (Not Used)
+
+> Temporal labeling was not used because the available datasets lack precise timepoint annotations. Cell states were classified using condition-based and score-based methods instead (see 4.3).
 
 ---
 
