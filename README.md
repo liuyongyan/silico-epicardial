@@ -282,8 +282,17 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 ### 4.3 Cell State Classification Results
 
 **Dual-method approach:**
-1. **Condition-based**: Using `disease` and `major_labl` (spatial zone) annotations
-2. **Score-based**: Using proliferation (9 genes) + EMT (17 genes) signatures
+
+**Method 1 - Condition-based:**
+- Quiescent: `disease == 'normal'`
+- Activated: `disease == 'myocardial infarction'` or `'myocardial ischemia'`
+- Kuppe only: further split by `major_labl` (IZ/BZ=high, FZ=medium, RZ=low activation)
+- Other diseases (valve disorder, heart failure): marked as 'other'
+
+**Method 2 - Score-based:**
+- Calculate `proliferation_score` (mean of 9 genes) and `emt_score` (up - down)
+- Combine into z-normalized `activation_score = (prolif_z + emt_z) / 2`
+- Activated: `activation_score > 75th percentile`
 
 **Cross-validation results:**
 
