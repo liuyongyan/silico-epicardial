@@ -324,11 +324,20 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 
 Extract sender cells from raw data and merge with epicardial cells for L-R analysis.
 
-**Sender cell types** (from Kuppe dataset):
+**Sender cell types:**
 - Cardiomyocytes
 - Macrophages / Myeloid cells
 - Fibroblasts
 - Endothelial cells
+
+**Data source selection:**
+
+| Dataset | Tissue | Sender cells available | Notes |
+|---------|--------|------------------------|-------|
+| **Kuppe** | Left ventricle | ✅ All 4 types | MI context, has spatial zones |
+| **Linna-Kuosmanen** | Right atrium | ✅ All 4 types | Cardiac surgery patients |
+
+> Both datasets can provide sender cells. Kuppe is preferred for MI-specific analysis due to spatial zone annotations (IZ/BZ/FZ/RZ). Linna-Kuosmanen can be used for validation or combined analysis.
 
 **Output**: `full_communication_dataset.h5ad`
 - Contains both sender and receiver (epicardial) cells
