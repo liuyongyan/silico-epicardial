@@ -73,13 +73,12 @@ epicardial-target-discovery/
 │   └── references/
 ├── scripts/
 │   └── 01_preprocessing/
-│       └── analyze_kuppe.py
-├── results/
-│   └── tables/
-│       ├── kuppe_celltype_summary.csv
-│       └── kuppe_sample_metadata.csv
-├── docs/
-│   └── H5AD_FORMAT_GUIDE.md
+│       ├── analyze_kuppe.py
+│       ├── extract_epicardial_simple.py
+│       ├── extract_kuppe_epicardial.py
+│       ├── compare_epicardial_scores.py
+│       ├── normalize_and_compare.py
+│       └── merge_epicardial_datasets.py
 └── papers/
 ```
 
