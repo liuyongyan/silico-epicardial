@@ -11,8 +11,13 @@ Sender cell types:
 - Fibroblasts
 - Endothelial cells
 - Macrophages/Myeloid cells
+
+Usage:
+    python prepare_communication_data.py              # Full data
+    python prepare_communication_data.py --sample 0.01  # 1% sample for development
 """
 
+import argparse
 import anndata as ad
 import scanpy as sc
 import numpy as np
@@ -23,6 +28,9 @@ from scipy import sparse
 PROJECT_DIR = Path(__file__).parent.parent.parent
 RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
+
+# Global sample fraction (set via command line)
+SAMPLE_FRACTION = None
 
 # Cell type mapping for sender cells
 KUPPE_SENDER_TYPES = {
@@ -42,6 +50,17 @@ LINNA_SENDER_TYPES = {
     'Endothelial': ['endocardial cell', 'cardiac blood vessel endothelial cell'],
     'Macrophage': ['macrophage'],
 }
+
+
+def sample_adata(adata, fraction, random_state=42):
+    """Randomly sample a fraction of cells from AnnData object."""
+    if fraction is None or fraction >= 1.0:
+        return adata
+    n_sample = max(int(adata.n_obs * fraction), 100)  # At least 100 cells
+    n_sample = min(n_sample, adata.n_obs)
+    np.random.seed(random_state)
+    indices = np.random.choice(adata.n_obs, n_sample, replace=False)
+    return adata[indices].copy()
 
 
 def extract_kuppe_sender_cells():
@@ -86,6 +105,11 @@ def extract_kuppe_sender_cells():
 
     sender.obs['dataset'] = 'Kuppe'
     sender.obs['cell_role'] = 'sender'
+
+    # Apply sampling if requested
+    if SAMPLE_FRACTION is not None:
+        sender = sample_adata(sender, SAMPLE_FRACTION)
+        print(f"\n  Sampled to {sender.n_obs:,} cells ({SAMPLE_FRACTION*100:.1f}%)")
 
     print("\nSender type distribution:")
     print(sender.obs['sender_type'].value_counts())
@@ -141,6 +165,11 @@ def extract_linna_sender_cells(filepath, dataset_name):
     sender.obs['dataset'] = dataset_name
     sender.obs['cell_role'] = 'sender'
 
+    # Apply sampling if requested
+    if SAMPLE_FRACTION is not None:
+        sender = sample_adata(sender, SAMPLE_FRACTION)
+        print(f"\n  Sampled to {sender.n_obs:,} cells ({SAMPLE_FRACTION*100:.1f}%)")
+
     print("\nSender type distribution:")
     print(sender.obs['sender_type'].value_counts())
 
@@ -150,8 +179,9 @@ def extract_linna_sender_cells(filepath, dataset_name):
 
 def create_kuppe_communication_dataset():
     """Create Kuppe-only communication dataset."""
+    suffix = "_sample" if SAMPLE_FRACTION else ""
     print("\n" + "#"*60)
-    print("# Creating communication_kuppe.h5ad")
+    print(f"# Creating communication_kuppe{suffix}.h5ad")
     print("#"*60)
 
     # Load Kuppe epicardial cells
@@ -160,7 +190,13 @@ def create_kuppe_communication_dataset():
     epi.obs['sender_type'] = 'Epicardial'
     epi.obs['cell_role'] = 'receiver'
     epi.obs['dataset'] = 'Kuppe'
-    print(f"  Epicardial: {epi.n_obs:,} cells")
+
+    # Apply sampling if requested
+    if SAMPLE_FRACTION is not None:
+        epi = sample_adata(epi, SAMPLE_FRACTION)
+        print(f"  Epicardial: {epi.n_obs:,} cells (sampled {SAMPLE_FRACTION*100:.1f}%)")
+    else:
+        print(f"  Epicardial: {epi.n_obs:,} cells")
 
     # Extract Kuppe sender cells
     sender = extract_kuppe_sender_cells()
@@ -185,7 +221,8 @@ def create_kuppe_communication_dataset():
     print(combined.obs['sender_type'].value_counts())
 
     # Save
-    output_path = PROCESSED_DIR / "communication_kuppe.h5ad"
+    suffix = "_sample" if SAMPLE_FRACTION else ""
+    output_path = PROCESSED_DIR / f"communication_kuppe{suffix}.h5ad"
     print(f"\nSaving to {output_path}...")
     combined.write_h5ad(output_path)
 
@@ -195,8 +232,9 @@ def create_kuppe_communication_dataset():
 
 def create_merged_communication_dataset():
     """Create merged communication dataset with all cells."""
+    suffix = "_sample" if SAMPLE_FRACTION else ""
     print("\n" + "#"*60)
-    print("# Creating communication_merged.h5ad")
+    print(f"# Creating communication_merged{suffix}.h5ad")
     print("#"*60)
 
     datasets = []
@@ -206,7 +244,13 @@ def create_merged_communication_dataset():
     epi = ad.read_h5ad(PROCESSED_DIR / "epicardial_with_states.h5ad")
     epi.obs['sender_type'] = 'Epicardial'
     epi.obs['cell_role'] = 'receiver'
-    print(f"  Epicardial: {epi.n_obs:,} cells")
+
+    # Apply sampling if requested
+    if SAMPLE_FRACTION is not None:
+        epi = sample_adata(epi, SAMPLE_FRACTION)
+        print(f"  Epicardial: {epi.n_obs:,} cells (sampled {SAMPLE_FRACTION*100:.1f}%)")
+    else:
+        print(f"  Epicardial: {epi.n_obs:,} cells")
     datasets.append(epi)
 
     # Extract Kuppe sender cells
@@ -252,13 +296,15 @@ def create_merged_communication_dataset():
     print("\nSender type distribution:")
     print(combined.obs['sender_type'].value_counts())
 
-    # Handle any infinity or NaN values
+    # Handle any infinity or NaN values (optimized for sparse matrices)
     print("\n" + "="*60)
     print("Cleaning data...")
     if sparse.issparse(combined.X):
-        combined.X = combined.X.toarray()
-    combined.X = np.nan_to_num(combined.X, nan=0.0, posinf=0.0, neginf=0.0)
-    combined.X = sparse.csr_matrix(combined.X)
+        # Only process non-zero elements (much faster for sparse data)
+        combined.X.data = np.nan_to_num(combined.X.data, nan=0.0, posinf=0.0, neginf=0.0)
+        combined.X.eliminate_zeros()
+    else:
+        combined.X = np.nan_to_num(combined.X, nan=0.0, posinf=0.0, neginf=0.0)
     print("  Removed NaN/Inf values")
 
     # Batch correction with Harmony
@@ -279,7 +325,8 @@ def create_merged_communication_dataset():
         print("Proceeding without batch correction...")
 
     # Save
-    output_path = PROCESSED_DIR / "communication_merged.h5ad"
+    suffix = "_sample" if SAMPLE_FRACTION else ""
+    output_path = PROCESSED_DIR / f"communication_merged{suffix}.h5ad"
     print(f"\nSaving to {output_path}...")
     combined.write_h5ad(output_path)
 
@@ -289,8 +336,21 @@ def create_merged_communication_dataset():
 
 
 def main():
+    global SAMPLE_FRACTION
+
+    parser = argparse.ArgumentParser(description='Prepare communication datasets for LIANA/NicheNet')
+    parser.add_argument('--sample', type=float, default=None,
+                        help='Sample fraction (e.g., 0.01 for 1%%). Default: use all data')
+    args = parser.parse_args()
+
+    SAMPLE_FRACTION = args.sample
+
     print("\n" + "#"*60)
     print("# Prepare Communication Datasets")
+    if SAMPLE_FRACTION:
+        print(f"# MODE: Sampling {SAMPLE_FRACTION*100:.1f}%% of data")
+    else:
+        print("# MODE: Full data")
     print("#"*60)
 
     # Create Kuppe-only dataset first (smaller, faster)
