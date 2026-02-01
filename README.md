@@ -320,7 +320,7 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 | PERIHEART | -0.05 | 10,391 | 6,439 |
 | CAREBANK | -0.20 | 11,742 | 566 |
 
-### 4.4 Prepare Full Communication Dataset
+### 4.4 Prepare Communication Datasets
 
 Extract sender cells from raw data and merge with epicardial cells for L-R analysis.
 
@@ -330,18 +330,24 @@ Extract sender cells from raw data and merge with epicardial cells for L-R analy
 - Fibroblasts
 - Endothelial cells
 
-**Data source selection:**
+**Data sources:**
 
-| Dataset | Tissue | Sender cells available | Notes |
-|---------|--------|------------------------|-------|
-| **Kuppe** | Left ventricle | ✅ All 4 types | MI context, has spatial zones |
+| Dataset | Tissue | Sender cells | Notes |
+|---------|--------|--------------|-------|
+| **Kuppe** | Left ventricle | ✅ All 4 types | MI context, has spatial zones (IZ/BZ/FZ/RZ) |
 | **Linna-Kuosmanen** | Right atrium | ✅ All 4 types | Cardiac surgery patients |
 
-> Both datasets can provide sender cells. Kuppe is preferred for MI-specific analysis due to spatial zone annotations (IZ/BZ/FZ/RZ). Linna-Kuosmanen can be used for validation or combined analysis.
+**Output datasets:**
 
-**Output**: `full_communication_dataset.h5ad`
-- Contains both sender and receiver (epicardial) cells
-- Used by LIANA and NicheNet in Phase 3
+| File | Contents | Purpose |
+|------|----------|---------|
+| `communication_merged.h5ad` | All epicardial + all sender (both datasets, batch-corrected) | Main analysis |
+| `communication_kuppe.h5ad` | Kuppe epicardial + Kuppe sender only | MI-specific validation |
+
+**Analysis strategy:**
+- **Main analysis**: Use merged dataset for maximum statistical power
+- **Validation**: Compare with Kuppe-only results to confirm MI-specific signals
+- Top L-R pairs consistent across both = high-confidence targets
 
 ### 4.5 Temporal Labeling (Not Used)
 
