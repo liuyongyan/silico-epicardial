@@ -18,8 +18,17 @@ from pathlib import Path
 from scipy import sparse
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
+RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
 RESULTS_DIR = PROJECT_DIR / "results/deg"
+
+
+def get_ensembl_to_symbol_mapping():
+    """Load Ensembl ID to gene symbol mapping from raw data."""
+    raw_file = RAW_DIR / "kuppe/54d24dbe-d39a-4844-bb21-07b5f4e173ad.h5ad"
+    adata_raw = ad.read_h5ad(raw_file, backed='r')
+    mapping = dict(zip(adata_raw.var_names, adata_raw.var['feature_name']))
+    return mapping
 
 
 def run_deg_analysis(use_sample=False):
@@ -116,7 +125,14 @@ def run_deg_analysis(use_sample=False):
 
         # Get results DataFrame
         results_df = stat_res.results_df.copy()
-        results_df['gene'] = results_df.index
+        results_df['ensembl_id'] = results_df.index
+
+        # Convert Ensembl IDs to gene symbols
+        print("\nConverting gene IDs to symbols...")
+        id_to_symbol = get_ensembl_to_symbol_mapping()
+        results_df['gene'] = results_df['ensembl_id'].map(id_to_symbol)
+        # Keep Ensembl ID if no mapping found
+        results_df['gene'] = results_df['gene'].fillna(results_df['ensembl_id'])
         results_df = results_df.reset_index(drop=True)
 
         # Sort by adjusted p-value

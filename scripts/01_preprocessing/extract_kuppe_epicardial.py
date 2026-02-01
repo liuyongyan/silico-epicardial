@@ -25,8 +25,11 @@ MARKERS = {
     'UPK3B': 'ENSG00000243566',
 }
 
+# Disease conditions to keep (MI + Normal only)
+KEEP_DISEASES = ['myocardial infarction', 'normal']
 
-def main():
+
+def main(filter_disease=True):
     print("\n#" + "="*58 + "#")
     print("# Kuppe Epicardial Cell Extraction")
     print("#" + "="*58 + "#")
@@ -38,6 +41,18 @@ def main():
     adata = ad.read_h5ad(kuppe_file, backed='r')
     print(f"Total cells: {adata.n_obs:,}")
     print(f"Total genes: {adata.n_vars:,}")
+
+    # Show disease distribution
+    print("\nDisease distribution:")
+    print(adata.obs['disease'].value_counts().to_string())
+
+    # Create disease mask
+    if filter_disease:
+        print(f"\nFiltering to diseases: {KEEP_DISEASES}")
+        disease_mask = adata.obs['disease'].isin(KEEP_DISEASES).values
+        print(f"Cells with MI/Normal: {disease_mask.sum():,} / {adata.n_obs:,}")
+    else:
+        disease_mask = np.ones(adata.n_obs, dtype=bool)
 
     # Find marker gene indices
     print("\nChecking markers:")
@@ -77,20 +92,28 @@ def main():
     threshold = np.percentile(scores, 95)
     print(f"  95th percentile: {threshold:.4f}")
 
-    # Get high-scoring cells
-    high_mask = scores > threshold
+    # Get high-scoring cells (apply disease filter)
+    high_mask = (scores > threshold) & disease_mask
     n_high = high_mask.sum()
-    print(f"\nHigh-scoring cells (>95th): {n_high:,}")
+    print(f"\nHigh-scoring cells (>95th, disease-filtered): {n_high:,}")
 
-    # Also get adipocytes
-    adipo_mask = (adata.obs['cell_type_original'] == 'Adipocyte').values
+    # Also get adipocytes (apply disease filter)
+    adipo_mask = (adata.obs['cell_type_original'] == 'Adipocyte').values & disease_mask
     n_adipo = adipo_mask.sum()
-    print(f"Adipocytes: {n_adipo:,}")
+    print(f"Adipocytes (disease-filtered): {n_adipo:,}")
 
     # Combine
     combined_mask = high_mask | adipo_mask
     n_combined = combined_mask.sum()
     print(f"Combined: {n_combined:,}")
+
+    # Show disease breakdown
+    if filter_disease:
+        print("\nDisease breakdown of selected cells:")
+        selected_obs = adata.obs.iloc[combined_mask]
+        for disease in KEEP_DISEASES:
+            count = (selected_obs['disease'] == disease).sum()
+            print(f"  {disease}: {count:,}")
 
     # Cell type distribution
     print("\nCell type distribution of selected cells:")

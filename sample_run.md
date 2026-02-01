@@ -14,66 +14,72 @@ This document tracks the development workflow using **1% sampled data** to quick
 ### Sample Files
 | File | Status | Description |
 |------|--------|-------------|
-| `communication_kuppe_sample.h5ad` | ✅ Created | Kuppe-only (1% sample) |
-| `communication_merged_sample.h5ad` | ⚠️ Partial | Merged dataset, no batch correction yet |
+| `communication_kuppe_sample.h5ad` | ⚠️ Needs regen | Kuppe-only (1% sample) - needs disease filtering |
+| `communication_merged_sample.h5ad` | ⚠️ Needs regen | Merged dataset - needs disease filtering |
 
 ### Full Data Files
 | File | Status | Description |
 |------|--------|-------------|
-| `communication_kuppe.h5ad` | ✅ Created | Kuppe-only (175k cells) |
-| `communication_merged.h5ad` | ⚠️ Created | Merged (757k cells), no batch correction |
-| `epicardial_with_states.h5ad` | ✅ Created | 59k epicardial cells with state labels |
+| `epicardial_periheart.h5ad` | ⚠️ Needs regen | PERIHEART epicardial - needs disease filtering |
+| `epicardial_carebank.h5ad` | ⚠️ Needs regen | CAREBANK epicardial - needs disease filtering |
+| `epicardial_kuppe.h5ad` | ⚠️ Needs regen | Kuppe epicardial - needs disease filtering |
+| `epicardial_with_states.h5ad` | ⚠️ Needs regen | All epicardial cells with state labels |
+| `communication_kuppe.h5ad` | ⚠️ Needs regen | Kuppe-only communication dataset |
+| `communication_merged.h5ad` | ⚠️ Needs regen | Merged communication dataset |
 
 ---
 
 ## Current State
 
-### Phase 2: Data Preparation ⚠️ Almost Complete
+### Phase 1: Preprocessing ⚠️ Needs Re-run
+
+**Status:** Disease filtering added - need to re-run extraction scripts.
+
+Scripts modified:
+- `extract_epicardial_simple.py` - now filters to MI + Normal
+- `extract_kuppe_epicardial.py` - now filters to MI + Normal
+
+---
+
+### Phase 2: Data Preparation ⚠️ Needs Re-run
 
 **Completed:**
 - Cell state classification (activated/quiescent/other)
 - Communication dataset creation (kuppe + merged)
 - Sample mode implemented (`--sample 0.01`)
+- Harmony batch correction working
+- **Disease filtering added to sender cell extraction**
 
-**Issue: Harmony Batch Correction**
+**Harmony Fix (Jan 2026):**
+The original code incorrectly transposed `ho.Z_corr`. harmonypy returns `(n_cells, n_pcs)` directly, not `(n_pcs, n_cells)` as the comment suggested. Removed the `.T` transpose to fix.
 
-The Harmony integration is failing when storing results:
-```
-ValueError: Value passed for key 'X_pca_harmony' is of incorrect shape.
-Values of obsm must match dimensions ('obs',) of parent.
-Value had shape (50,) while it should have had (7571,).
-```
-
-**Debugging needed:**
-```bash
-python scripts/02_cell_states/prepare_communication_data.py --sample 0.01 --only merged --force
-```
-
-The script now prints debug info about `ho.Z_corr` shape. Need to check:
-- `ho.Z_corr.shape` - expected (50, 7571) or (7571, 50)?
-- May need `.cpu().numpy()` if it's a PyTorch tensor on MPS
-
-**Workaround if needed:**
-For development, batch correction is not critical. The sample data can be used without it.
+**Disease Filtering (Jan 2026):**
+Added disease filtering to `prepare_communication_data.py` to keep only MI + Normal sender cells.
 
 ---
 
-### Phase 3: Communication Analysis 📝 Scripts Ready
+### Phase 3: Communication Analysis ✅ Mostly Complete
 
-Scripts created in `scripts/03_communication/`:
+Scripts in `scripts/03_communication/`:
 
-| Script | Purpose | Command |
-|--------|---------|---------|
-| `01_deg_analysis.py` | DEG with pyDESeq2 | `python 01_deg_analysis.py --sample` |
-| `02_liana_analysis.py` | LIANA L-R inference | `python 02_liana_analysis.py --sample` |
-| `03_nichenet_analysis.py` | NicheNet ligand activity | `python 03_nichenet_analysis.py --sample` |
+| Script | Status | Key Results |
+|--------|--------|-------------|
+| `01_deg_analysis.py` | ✅ Done | 439 upregulated, 2,714 downregulated genes |
+| `02_liana_analysis.py` | ✅ Done | 2,104 L-R pairs targeting epicardial cells |
+| `03_nichenet_analysis.py` | ⏸️ Needs data | Requires NicheNet data from Zenodo |
 
-**Dependencies needed:**
-```bash
-pip install pydeseq2 liana
-```
+**DEG Top Hits (Upregulated in Activated):**
+- EMT/ECM: LAMA2, COL6A3, COL4A1/A2, FN1, VCAN, FBN1
+- EMT TFs: ZEB1, ZEB2 significantly upregulated
 
-**NicheNet data needed:**
+**LIANA Top L-R Pairs (→ Epicardial):**
+- FGF12 → FGFR1/FGFR2 (Cardiomyocyte)
+- TGFB1 → ACVR1B_TGFBR2 (Epicardial autocrine)
+- NRG1/NRG3 → EGFR (Endothelial)
+- DCN → EGFR/ERBB4/MET (Fibroblast)
+- Top ligands: CALM1, FN1, TGFB1, LAMA2, ADAM10
+
+**NicheNet data (if needed):**
 Download from https://zenodo.org/record/7074291:
 - `ligand_target_matrix.rds` → convert to CSV
 - `lr_network.rds` → convert to CSV
@@ -83,31 +89,38 @@ Place in `data/nichenet/`
 
 ## Execution Order
 
-### Step 1: Fix Harmony (or skip for now)
+### Step 0: Re-run Preprocessing with Disease Filtering
 ```bash
-# Debug run
+# Disease filtering added to keep only MI + Normal
+# Re-extract epicardial cells (Phase 1)
+python scripts/01_preprocessing/extract_epicardial_simple.py   # PERIHEART + CAREBANK
+python scripts/01_preprocessing/extract_kuppe_epicardial.py    # Kuppe
+
+# Re-classify cell states (Phase 2)
+python scripts/02_cell_states/classify_cell_states.py
+```
+
+### Step 1: ✅ Harmony Fixed
+```bash
+# Sample data now includes batch correction + disease filtering
 python scripts/02_cell_states/prepare_communication_data.py --sample 0.01 --only merged --force
-
-# If Harmony keeps failing, the sample data is still usable for Phase 3 testing
 ```
 
-### Step 2: DEG Analysis
+### Step 2: ✅ DEG Analysis Complete
 ```bash
-pip install pydeseq2
 python scripts/03_communication/01_deg_analysis.py --sample
-# Output: results/deg/upregulated_genes_sample.txt
+# Output: results/deg/deg_results_sample.csv (gene symbols)
 ```
 
-### Step 3: LIANA Analysis
+### Step 3: ✅ LIANA Analysis Complete
 ```bash
-pip install liana
 python scripts/03_communication/02_liana_analysis.py --sample
 # Output: results/liana/liana_epicardial_results_merged_sample.csv
 ```
 
-### Step 4: NicheNet Analysis
+### Step 4: NicheNet Analysis (Optional)
 ```bash
-# First, prepare NicheNet data (see above)
+# First, prepare NicheNet data from Zenodo
 python scripts/03_communication/03_nichenet_analysis.py --sample
 # Output: results/nichenet/nichenet_ligand_activities_sample.csv
 ```
@@ -128,6 +141,14 @@ python scripts/03_communication/03_nichenet_analysis.py
 
 ## Known Issues & Fixes
 
+### 0. Disease Condition Filtering (Jan 2026)
+**Issue:** CAREBANK dataset contains no MI patients (only myocardial ischemia, heart valve disorder, etc.), confounding DEG and LIANA results.
+**Fix:** Added disease filtering to all extraction scripts:
+- `extract_epicardial_simple.py` - filters PERIHEART/CAREBANK
+- `extract_kuppe_epicardial.py` - filters Kuppe
+- `prepare_communication_data.py` - filters sender cells
+Only keeps `['myocardial infarction', 'normal']` conditions.
+
 ### 1. Numpy/scikit-misc Incompatibility
 **Error:** `numpy.dtype size changed, may indicate binary incompatibility`
 **Fix:** `pip install numpy==1.24.3 --force-reinstall`
@@ -138,7 +159,7 @@ python scripts/03_communication/03_nichenet_analysis.py
 
 ### 3. Harmony Output Shape
 **Error:** `Value passed for key 'X_pca_harmony' is of incorrect shape`
-**Status:** Debugging in progress - may need to handle PyTorch tensor conversion
+**Status:** ✅ Fixed - removed incorrect `.T` transpose; `ho.Z_corr` is already `(n_cells, n_pcs)`
 
 ---
 

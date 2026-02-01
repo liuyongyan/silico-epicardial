@@ -18,8 +18,59 @@ import pandas as pd
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
+RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
 RESULTS_DIR = PROJECT_DIR / "results/liana"
+
+
+def get_ensembl_to_symbol_mapping():
+    """Load Ensembl ID to gene symbol mapping from raw data."""
+    print("Loading gene symbol mapping from raw data...")
+
+    # Load from Kuppe raw data (has feature_name column)
+    raw_file = RAW_DIR / "kuppe/54d24dbe-d39a-4844-bb21-07b5f4e173ad.h5ad"
+    adata_raw = ad.read_h5ad(raw_file, backed='r')
+
+    # Create mapping dictionary
+    mapping = dict(zip(adata_raw.var_names, adata_raw.var['feature_name']))
+    print(f"  Loaded {len(mapping):,} gene mappings")
+
+    return mapping
+
+
+def convert_to_gene_symbols(adata, mapping):
+    """Convert var_names from Ensembl IDs to gene symbols."""
+    print("Converting Ensembl IDs to gene symbols...")
+
+    # Get new names
+    new_names = []
+    converted = 0
+    for ensembl_id in adata.var_names:
+        if ensembl_id in mapping:
+            new_names.append(mapping[ensembl_id])
+            converted += 1
+        else:
+            new_names.append(ensembl_id)  # Keep original if no mapping
+
+    print(f"  Converted {converted:,}/{len(new_names):,} genes")
+
+    # Handle duplicates by keeping first occurrence
+    seen = set()
+    unique_mask = []
+    for name in new_names:
+        if name not in seen:
+            seen.add(name)
+            unique_mask.append(True)
+        else:
+            unique_mask.append(False)
+
+    # Subset to unique genes
+    adata = adata[:, unique_mask].copy()
+    adata.var_names = [new_names[i] for i, keep in enumerate(unique_mask) if keep]
+    adata.var_names_make_unique()
+
+    print(f"  Final gene count: {adata.n_vars:,}")
+    return adata
 
 
 def run_liana_analysis(use_sample=False, kuppe_only=False):
@@ -44,6 +95,12 @@ def run_liana_analysis(use_sample=False, kuppe_only=False):
     adata = ad.read_h5ad(input_file)
     print(f"  Total cells: {adata.n_obs:,}")
     print(f"  Total genes: {adata.n_vars:,}")
+
+    # Check if gene names are Ensembl IDs and convert if needed
+    if adata.var_names[0].startswith('ENSG'):
+        print("\nDetected Ensembl IDs - converting to gene symbols...")
+        mapping = get_ensembl_to_symbol_mapping()
+        adata = convert_to_gene_symbols(adata, mapping)
 
     print("\nCell type distribution:")
     print(adata.obs['sender_type'].value_counts())

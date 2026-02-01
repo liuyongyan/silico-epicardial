@@ -4,6 +4,8 @@ papers/
 # Data directory (large files, download separately)
 data/
 
+results/
+
 # Data files (backup patterns)
 *.h5ad
 *.rds

@@ -255,44 +255,48 @@ def cross_validate(adata):
             act = adata.obs.loc[mask, 'activation_score'].mean()
             print(f"  {state:12}: prolif={prolif:.4f}, emt={emt:.4f}, activation={act:.4f} (n={mask.sum():,})")
 
-    # Create consensus labels
+    # Create consensus labels using Option A naming:
+    # - activated: MI + high score (true responders)
+    # - bystander: MI + low score (in injury zone but not responding)
+    # - primed: Normal + high score (constitutively active)
+    # - quiescent: Normal + low score (resting)
     print("\n" + "-"*60)
-    print("Creating consensus labels...")
+    print("Creating cell state labels (Option A naming)...")
 
-    # Consensus: both methods agree
-    adata.obs['consensus_state'] = 'ambiguous'
+    adata.obs['cell_state'] = 'unknown'
 
-    # Both say quiescent
-    quiescent_mask = (adata.obs['condition_binary'] == 'quiescent') & \
-                     (adata.obs['score_binary'] == 'quiescent')
-    adata.obs.loc[quiescent_mask, 'consensus_state'] = 'quiescent'
-
-    # Both say activated
+    # MI + high score = activated (true responders)
     activated_mask = (adata.obs['condition_binary'] == 'activated') & \
                      (adata.obs['score_binary'] == 'activated')
-    adata.obs.loc[activated_mask, 'consensus_state'] = 'activated'
+    adata.obs.loc[activated_mask, 'cell_state'] = 'activated'
 
-    # Condition says activated but score is low (possible early activation or resistant)
-    early_mask = (adata.obs['condition_binary'] == 'activated') & \
-                 (adata.obs['score_binary'] == 'quiescent')
-    adata.obs.loc[early_mask, 'consensus_state'] = 'early_activated'
+    # MI + low score = bystander (in injury zone but not responding)
+    bystander_mask = (adata.obs['condition_binary'] == 'activated') & \
+                     (adata.obs['score_binary'] == 'quiescent')
+    adata.obs.loc[bystander_mask, 'cell_state'] = 'bystander'
 
-    # Score high but condition normal (possibly pre-disease or heterogeneous)
-    predisease_mask = (adata.obs['condition_binary'] == 'quiescent') & \
-                      (adata.obs['score_binary'] == 'activated')
-    adata.obs.loc[predisease_mask, 'consensus_state'] = 'pre_activated'
+    # Normal + high score = primed (constitutively active)
+    primed_mask = (adata.obs['condition_binary'] == 'quiescent') & \
+                  (adata.obs['score_binary'] == 'activated')
+    adata.obs.loc[primed_mask, 'cell_state'] = 'primed'
 
-    print("\nConsensus state distribution:")
-    print(adata.obs['consensus_state'].value_counts())
+    # Normal + low score = quiescent (resting)
+    quiescent_mask = (adata.obs['condition_binary'] == 'quiescent') & \
+                     (adata.obs['score_binary'] == 'quiescent')
+    adata.obs.loc[quiescent_mask, 'cell_state'] = 'quiescent'
 
-    # Final binary for downstream analysis
-    adata.obs['final_state'] = adata.obs['consensus_state'].apply(
-        lambda x: 'activated' if x in ['activated', 'early_activated'] else
-                  ('quiescent' if x == 'quiescent' else 'other')
-    )
+    print("\nCell state distribution:")
+    print(adata.obs['cell_state'].value_counts())
 
-    print("\nFinal binary state:")
-    print(adata.obs['final_state'].value_counts())
+    # Also keep legacy columns for compatibility
+    adata.obs['consensus_state'] = adata.obs['cell_state']
+    adata.obs['final_state'] = adata.obs['cell_state']
+
+    print("\nCell state summary:")
+    print("  activated  = MI + high molecular score (true responders)")
+    print("  bystander  = MI + low molecular score (non-responding)")
+    print("  primed     = Normal + high molecular score (constitutively active)")
+    print("  quiescent  = Normal + low molecular score (resting)")
 
 
 def main():
@@ -300,10 +304,42 @@ def main():
     print("# Phase 2: Epicardial Cell State Classification")
     print("#"*60)
 
-    # Load data
-    print("\nLoading merged epicardial dataset...")
-    adata = ad.read_h5ad(PROCESSED_DIR / "epicardial_all_merged.h5ad")
-    print(f"Loaded: {adata.n_obs:,} cells, {adata.n_vars:,} genes")
+    # Load and merge individual epicardial files
+    print("\nLoading individual epicardial datasets...")
+    datasets = []
+
+    # PERIHEART
+    periheart = ad.read_h5ad(PROCESSED_DIR / "epicardial_periheart.h5ad")
+    periheart.obs['dataset'] = 'PERIHEART'
+    print(f"  PERIHEART: {periheart.n_obs:,} cells")
+    datasets.append(periheart)
+
+    # CAREBANK
+    carebank = ad.read_h5ad(PROCESSED_DIR / "epicardial_carebank.h5ad")
+    carebank.obs['dataset'] = 'CAREBANK'
+    print(f"  CAREBANK: {carebank.n_obs:,} cells")
+    datasets.append(carebank)
+
+    # Kuppe
+    kuppe = ad.read_h5ad(PROCESSED_DIR / "epicardial_kuppe.h5ad")
+    kuppe.obs['dataset'] = 'Kuppe_MI'
+    print(f"  Kuppe: {kuppe.n_obs:,} cells")
+    datasets.append(kuppe)
+
+    # Find common genes and merge
+    print("\nMerging datasets...")
+    common_genes = set(datasets[0].var_names)
+    for d in datasets[1:]:
+        common_genes &= set(d.var_names)
+    common_genes = sorted(list(common_genes))
+    print(f"  Common genes: {len(common_genes):,}")
+
+    for i in range(len(datasets)):
+        datasets[i] = datasets[i][:, common_genes].copy()
+
+    adata = ad.concat(datasets, join='outer')
+    adata.obs_names_make_unique()
+    print(f"  Total: {adata.n_obs:,} cells, {adata.n_vars:,} genes")
 
     # Method 1: Condition-based
     assign_condition_labels(adata)
@@ -324,7 +360,7 @@ def main():
         mask = adata.obs['dataset'] == ds
         subset = adata.obs[mask]
         print(f"\n[{ds}]")
-        print(f"  Final state: {dict(subset['final_state'].value_counts())}")
+        print(f"  Cell states: {dict(subset['cell_state'].value_counts())}")
         print(f"  Mean activation score: {subset['activation_score'].mean():.4f}")
 
     # Save

@@ -31,6 +31,9 @@ PROJECT_DIR = Path(__file__).parent.parent.parent
 RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
 
+# Disease conditions to keep (MI + Normal only)
+KEEP_DISEASES = ['myocardial infarction', 'normal']
+
 # Global settings (set via command line)
 SAMPLE_FRACTION = None
 FORCE_REGENERATE = False
@@ -82,7 +85,14 @@ def extract_kuppe_sender_cells():
     adata = ad.read_h5ad(RAW_DIR / "kuppe/54d24dbe-d39a-4844-bb21-07b5f4e173ad.h5ad")
     print(f"Loaded: {adata.n_obs:,} cells")
 
-    # Build mask for sender cells
+    # Filter by disease condition
+    print(f"\nFiltering to diseases: {KEEP_DISEASES}")
+    print("Disease distribution before filtering:")
+    print(adata.obs['disease'].value_counts().to_string())
+    disease_mask = adata.obs['disease'].isin(KEEP_DISEASES).values
+    print(f"Cells with MI/Normal: {disease_mask.sum():,} / {adata.n_obs:,}")
+
+    # Build mask for sender cells (combined with disease filter)
     mask = np.zeros(adata.n_obs, dtype=bool)
 
     # By cell_type
@@ -99,9 +109,19 @@ def extract_kuppe_sender_cells():
             mask |= ct_mask
             print(f"  {sender_type} (original: {ct}): {ct_mask.sum():,} cells")
 
+    # Apply disease filter
+    mask = mask & disease_mask
+    print(f"\nSender cells after disease filter: {mask.sum():,}")
+
     # Subset
     sender = adata[mask].copy()
-    print(f"\nTotal sender cells: {sender.n_obs:,}")
+    print(f"Total sender cells: {sender.n_obs:,}")
+
+    # Show disease breakdown
+    print("\nDisease breakdown of sender cells:")
+    for disease in KEEP_DISEASES:
+        count = (sender.obs['disease'] == disease).sum()
+        print(f"  {disease}: {count:,}")
 
     # Add standardized cell type label
     sender.obs['sender_type'] = 'unknown'
@@ -137,6 +157,13 @@ def extract_linna_sender_cells(filepath, dataset_name):
     adata = ad.read_h5ad(filepath)
     print(f"Loaded: {adata.n_obs:,} cells")
 
+    # Filter by disease condition
+    print(f"\nFiltering to diseases: {KEEP_DISEASES}")
+    print("Disease distribution before filtering:")
+    print(adata.obs['disease'].value_counts().to_string())
+    disease_mask = adata.obs['disease'].isin(KEEP_DISEASES).values
+    print(f"Cells with MI/Normal: {disease_mask.sum():,} / {adata.n_obs:,}")
+
     # Apply log1p if needed (Linna-Kuosmanen is in CPM format)
     sample = adata.X[:100, :100]
     if sparse.issparse(sample):
@@ -148,7 +175,7 @@ def extract_linna_sender_cells(filepath, dataset_name):
         else:
             adata.X = np.log1p(adata.X)
 
-    # Build mask for sender cells
+    # Build mask for sender cells (will combine with disease filter)
     mask = np.zeros(adata.n_obs, dtype=bool)
 
     for sender_type, cell_types in LINNA_SENDER_TYPES.items():
@@ -157,9 +184,19 @@ def extract_linna_sender_cells(filepath, dataset_name):
             mask |= ct_mask
             print(f"  {sender_type} ({ct}): {ct_mask.sum():,} cells")
 
+    # Apply disease filter
+    mask = mask & disease_mask
+    print(f"\nSender cells after disease filter: {mask.sum():,}")
+
     # Subset
     sender = adata[mask].copy()
-    print(f"\nTotal sender cells: {sender.n_obs:,}")
+    print(f"Total sender cells: {sender.n_obs:,}")
+
+    # Show disease breakdown
+    print("\nDisease breakdown of sender cells:")
+    for disease in KEEP_DISEASES:
+        count = (sender.obs['disease'] == disease).sum()
+        print(f"  {disease}: {count:,}")
 
     # Add standardized cell type label
     sender.obs['sender_type'] = 'unknown'
@@ -365,9 +402,9 @@ def create_merged_communication_dataset():
         print(f"  Harmony Z_corr shape: {ho.Z_corr.shape}")
 
         # Store corrected embeddings
-        # Z_corr is (n_pcs, n_cells), need to transpose to (n_cells, n_pcs)
-        Z_corrected = np.array(ho.Z_corr).T
-        print(f"  Corrected shape after transpose: {Z_corrected.shape}")
+        # Z_corr is already (n_cells, n_pcs) - no transpose needed
+        Z_corrected = np.array(ho.Z_corr)
+        print(f"  Corrected shape: {Z_corrected.shape}")
 
         combined.obsm['X_pca_harmony'] = Z_corrected
         print("Harmony integration complete!")

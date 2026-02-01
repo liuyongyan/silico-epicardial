@@ -17,8 +17,11 @@ RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
+# Disease conditions to keep (MI + Normal only)
+KEEP_DISEASES = ['myocardial infarction', 'normal']
 
-def extract_mesothelial_simple(filepath, output_name):
+
+def extract_mesothelial_simple(filepath, output_name, filter_disease=True):
     """Extract mesothelial cells using simple row-by-row approach."""
     print(f"\n{'='*60}")
     print(f"Processing: {filepath.name}")
@@ -29,11 +32,28 @@ def extract_mesothelial_simple(filepath, output_name):
     print(f"Total cells: {adata.n_obs:,}")
     print(f"Total genes: {adata.n_vars:,}")
 
-    # Find mesothelial cells
-    meso_mask = adata.obs['cell_type'] == 'mesothelial cell'
-    meso_indices = np.where(meso_mask.values)[0]
+    # Filter by disease condition if requested
+    if filter_disease:
+        print(f"\nFiltering to diseases: {KEEP_DISEASES}")
+        print("Disease distribution before filtering:")
+        print(adata.obs['disease'].value_counts().to_string())
+
+        disease_mask = adata.obs['disease'].isin(KEEP_DISEASES)
+        print(f"\nCells with MI/Normal: {disease_mask.sum():,} / {adata.n_obs:,}")
+    else:
+        disease_mask = pd.Series([True] * adata.n_obs, index=adata.obs_names)
+
+    # Find mesothelial cells (combined with disease filter)
+    meso_mask = (adata.obs['cell_type'] == 'mesothelial cell') & disease_mask.values
+    meso_indices = np.where(meso_mask)[0]
     n_meso = len(meso_indices)
-    print(f"Mesothelial cells: {n_meso:,}")
+    print(f"\nMesothelial cells (after disease filter): {n_meso:,}")
+
+    if filter_disease and n_meso > 0:
+        print("Disease breakdown of selected cells:")
+        selected_diseases = adata.obs.iloc[meso_indices]['disease'].value_counts()
+        for disease, count in selected_diseases.items():
+            print(f"  {disease}: {count:,}")
 
     if n_meso == 0:
         return None
@@ -42,8 +62,24 @@ def extract_mesothelial_simple(filepath, output_name):
     obs_meso = adata.obs.iloc[meso_indices].copy()
     var_df = adata.var.copy()
 
-    # Read X in small batches
-    print(f"Extracting expression data...")
+    # Step 1: Check if normalization is needed BEFORE extraction
+    # Sample a few cells to detect data scale
+    print("\nChecking data scale...")
+    sample_idx = meso_indices[:min(100, n_meso)]
+    X_sample = adata.X[sample_idx, :]
+    if sparse.issparse(X_sample):
+        sample_max = X_sample.data.max() if len(X_sample.data) > 0 else 0
+    else:
+        sample_max = X_sample.max()
+
+    needs_log1p = sample_max > 50  # Linear scale (CPM) needs transformation
+    if needs_log1p:
+        print(f"  Data is in CPM format (max={sample_max:.1f}), will apply log1p during extraction")
+    else:
+        print(f"  Data is already log-normalized (max={sample_max:.2f})")
+
+    # Step 2: Extract and normalize in batches
+    print(f"\nExtracting expression data...")
     batch_size = 1000
     X_parts = []
 
@@ -53,10 +89,16 @@ def extract_mesothelial_simple(filepath, output_name):
 
         # Read batch
         X_batch = adata.X[batch_idx, :]
-        if sparse.issparse(X_batch):
-            X_parts.append(X_batch.copy())
+        if not sparse.issparse(X_batch):
+            X_batch = sparse.csr_matrix(X_batch)
         else:
-            X_parts.append(sparse.csr_matrix(X_batch))
+            X_batch = X_batch.copy()
+
+        # Apply log1p normalization during extraction (before assembly)
+        if needs_log1p:
+            X_batch.data = np.log1p(X_batch.data)
+
+        X_parts.append(X_batch)
 
         if batch_end % 5000 == 0 or batch_end == n_meso:
             print(f"  {batch_end:,} / {n_meso:,}")
@@ -67,13 +109,20 @@ def extract_mesothelial_simple(filepath, output_name):
     del X_parts
     gc.collect()
 
-    # Create AnnData
+    # Create AnnData (data is already normalized)
     print("Creating AnnData...")
     adata_meso = ad.AnnData(
         X=X_combined,
         obs=obs_meso.reset_index(drop=True),
         var=var_df
     )
+
+    # Verify final data scale
+    if sparse.issparse(adata_meso.X):
+        final_max = adata_meso.X.data.max() if len(adata_meso.X.data) > 0 else 0
+    else:
+        final_max = adata_meso.X.max()
+    print(f"Final data max value: {final_max:.2f} (log1p scale)")
 
     # Save
     output_file = PROCESSED_DIR / output_name
