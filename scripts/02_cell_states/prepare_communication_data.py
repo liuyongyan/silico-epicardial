@@ -252,22 +252,31 @@ def create_merged_communication_dataset():
     print("\nSender type distribution:")
     print(combined.obs['sender_type'].value_counts())
 
+    # Handle any infinity or NaN values
+    print("\n" + "="*60)
+    print("Cleaning data...")
+    if sparse.issparse(combined.X):
+        combined.X = combined.X.toarray()
+    combined.X = np.nan_to_num(combined.X, nan=0.0, posinf=0.0, neginf=0.0)
+    combined.X = sparse.csr_matrix(combined.X)
+    print("  Removed NaN/Inf values")
+
     # Batch correction with Harmony
     print("\n" + "="*60)
     print("Batch correction with Harmony...")
 
     # Need to compute PCA first
-    sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset')
-    sc.tl.pca(combined, n_comps=50)
-
-    # Harmony integration
     try:
+        sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset')
+        sc.tl.pca(combined, n_comps=50)
+
+        # Harmony integration
         import scanpy.external as sce
         sce.pp.harmony_integrate(combined, key='dataset')
         print("Harmony integration complete!")
-    except ImportError:
-        print("WARNING: harmonypy not installed, skipping batch correction")
-        print("Install with: pip install harmonypy")
+    except Exception as e:
+        print(f"WARNING: Batch correction failed: {e}")
+        print("Proceeding without batch correction...")
 
     # Save
     output_path = PROCESSED_DIR / "communication_merged.h5ad"
