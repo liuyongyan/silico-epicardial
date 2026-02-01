@@ -302,10 +302,13 @@ def create_merged_communication_dataset():
     if sparse.issparse(combined.X):
         # Only process non-zero elements (much faster for sparse data)
         combined.X.data = np.nan_to_num(combined.X.data, nan=0.0, posinf=0.0, neginf=0.0)
+        # Clip values to prevent expm1 overflow (max safe value ~88 for float32)
+        combined.X.data = np.clip(combined.X.data, 0, 50)
         combined.X.eliminate_zeros()
     else:
         combined.X = np.nan_to_num(combined.X, nan=0.0, posinf=0.0, neginf=0.0)
-    print("  Removed NaN/Inf values")
+        combined.X = np.clip(combined.X, 0, 50)
+    print("  Removed NaN/Inf values and clipped extreme values")
 
     # Batch correction with Harmony
     print("\n" + "="*60)
@@ -313,7 +316,8 @@ def create_merged_communication_dataset():
 
     # Need to compute PCA first
     try:
-        sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset')
+        # Use seurat_v3 flavor to avoid expm1 overflow issues
+        sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset', flavor='seurat_v3')
         sc.tl.pca(combined, n_comps=50)
 
         # Harmony integration
