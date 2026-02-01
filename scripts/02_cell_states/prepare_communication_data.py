@@ -349,18 +349,29 @@ def create_merged_communication_dataset():
         sc.tl.pca(combined, n_comps=50)
 
         # Run Harmony directly (more reliable than scanpy wrapper)
+        pca_data = combined.obsm['X_pca']
+        print(f"  Input PCA shape: {pca_data.shape}")
+
         ho = hm.run_harmony(
-            combined.obsm['X_pca'],
+            pca_data,
             combined.obs,
             'dataset',
             max_iter_harmony=10,
             verbose=True
         )
 
+        # Debug: check harmony output
+        print(f"  Harmony Z_corr type: {type(ho.Z_corr)}")
+        print(f"  Harmony Z_corr shape: {ho.Z_corr.shape}")
+
         # Store corrected embeddings
-        combined.obsm['X_pca_harmony'] = ho.Z_corr.T  # Transpose to (n_cells, n_pcs)
+        # Z_corr is (n_pcs, n_cells), need to transpose to (n_cells, n_pcs)
+        Z_corrected = np.array(ho.Z_corr).T
+        print(f"  Corrected shape after transpose: {Z_corrected.shape}")
+
+        combined.obsm['X_pca_harmony'] = Z_corrected
         print("Harmony integration complete!")
-        print(f"  Corrected embeddings shape: {combined.obsm['X_pca_harmony'].shape}")
+        print(f"  Final embeddings shape: {combined.obsm['X_pca_harmony'].shape}")
     except ImportError as e:
         print(f"WARNING: Harmony dependency missing: {e}")
         print("Install with: pip install scikit-misc harmonypy")
