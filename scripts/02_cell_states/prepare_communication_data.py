@@ -342,22 +342,33 @@ def create_merged_communication_dataset():
 
     # Need to compute PCA first
     try:
-        # Check if harmony dependencies are available
-        import scanpy.external as sce
+        import harmonypy as hm
 
-        # Use seurat_v3 flavor to avoid expm1 overflow issues
+        # Use seurat_v3 flavor (works better with normalized data)
         sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset', flavor='seurat_v3')
         sc.tl.pca(combined, n_comps=50)
 
-        # Harmony integration
-        sce.pp.harmony_integrate(combined, key='dataset')
+        # Run Harmony directly (more reliable than scanpy wrapper)
+        ho = hm.run_harmony(
+            combined.obsm['X_pca'],
+            combined.obs,
+            'dataset',
+            max_iter_harmony=10,
+            verbose=True
+        )
+
+        # Store corrected embeddings
+        combined.obsm['X_pca_harmony'] = ho.Z_corr.T  # Transpose to (n_cells, n_pcs)
         print("Harmony integration complete!")
+        print(f"  Corrected embeddings shape: {combined.obsm['X_pca_harmony'].shape}")
     except ImportError as e:
         print(f"WARNING: Harmony dependency missing: {e}")
         print("Install with: pip install scikit-misc harmonypy")
         print("Proceeding without batch correction...")
     except Exception as e:
         print(f"WARNING: Batch correction failed: {e}")
+        import traceback
+        traceback.print_exc()
         print("Proceeding without batch correction...")
 
     # Save
