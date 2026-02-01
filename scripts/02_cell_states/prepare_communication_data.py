@@ -15,6 +15,8 @@ Sender cell types:
 Usage:
     python prepare_communication_data.py              # Full data
     python prepare_communication_data.py --sample 0.01  # 1% sample for development
+    python prepare_communication_data.py --force      # Force regenerate all
+    python prepare_communication_data.py --only merged  # Only generate merged dataset
 """
 
 import argparse
@@ -29,8 +31,9 @@ PROJECT_DIR = Path(__file__).parent.parent.parent
 RAW_DIR = PROJECT_DIR / "data/raw"
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
 
-# Global sample fraction (set via command line)
+# Global settings (set via command line)
 SAMPLE_FRACTION = None
+FORCE_REGENERATE = False
 
 # Cell type mapping for sender cells
 KUPPE_SENDER_TYPES = {
@@ -50,6 +53,13 @@ LINNA_SENDER_TYPES = {
     'Endothelial': ['endocardial cell', 'cardiac blood vessel endothelial cell'],
     'Macrophage': ['macrophage'],
 }
+
+
+def check_output_exists(name):
+    """Check if output file already exists."""
+    suffix = "_sample" if SAMPLE_FRACTION else ""
+    output_path = PROCESSED_DIR / f"{name}{suffix}.h5ad"
+    return output_path.exists()
 
 
 def sample_adata(adata, fraction, random_state=42):
@@ -180,6 +190,15 @@ def extract_linna_sender_cells(filepath, dataset_name):
 def create_kuppe_communication_dataset():
     """Create Kuppe-only communication dataset."""
     suffix = "_sample" if SAMPLE_FRACTION else ""
+    output_path = PROCESSED_DIR / f"communication_kuppe{suffix}.h5ad"
+
+    # Check if already exists
+    if output_path.exists() and not FORCE_REGENERATE:
+        print("\n" + "#"*60)
+        print(f"# SKIP: communication_kuppe{suffix}.h5ad already exists")
+        print("#"*60)
+        return
+
     print("\n" + "#"*60)
     print(f"# Creating communication_kuppe{suffix}.h5ad")
     print("#"*60)
@@ -221,8 +240,6 @@ def create_kuppe_communication_dataset():
     print(combined.obs['sender_type'].value_counts())
 
     # Save
-    suffix = "_sample" if SAMPLE_FRACTION else ""
-    output_path = PROCESSED_DIR / f"communication_kuppe{suffix}.h5ad"
     print(f"\nSaving to {output_path}...")
     combined.write_h5ad(output_path)
 
@@ -233,6 +250,15 @@ def create_kuppe_communication_dataset():
 def create_merged_communication_dataset():
     """Create merged communication dataset with all cells."""
     suffix = "_sample" if SAMPLE_FRACTION else ""
+    output_path = PROCESSED_DIR / f"communication_merged{suffix}.h5ad"
+
+    # Check if already exists
+    if output_path.exists() and not FORCE_REGENERATE:
+        print("\n" + "#"*60)
+        print(f"# SKIP: communication_merged{suffix}.h5ad already exists")
+        print("#"*60)
+        return
+
     print("\n" + "#"*60)
     print(f"# Creating communication_merged{suffix}.h5ad")
     print("#"*60)
@@ -316,21 +342,25 @@ def create_merged_communication_dataset():
 
     # Need to compute PCA first
     try:
+        # Check if harmony dependencies are available
+        import scanpy.external as sce
+
         # Use seurat_v3 flavor to avoid expm1 overflow issues
         sc.pp.highly_variable_genes(combined, n_top_genes=2000, batch_key='dataset', flavor='seurat_v3')
         sc.tl.pca(combined, n_comps=50)
 
         # Harmony integration
-        import scanpy.external as sce
         sce.pp.harmony_integrate(combined, key='dataset')
         print("Harmony integration complete!")
+    except ImportError as e:
+        print(f"WARNING: Harmony dependency missing: {e}")
+        print("Install with: pip install scikit-misc harmonypy")
+        print("Proceeding without batch correction...")
     except Exception as e:
         print(f"WARNING: Batch correction failed: {e}")
         print("Proceeding without batch correction...")
 
     # Save
-    suffix = "_sample" if SAMPLE_FRACTION else ""
-    output_path = PROCESSED_DIR / f"communication_merged{suffix}.h5ad"
     print(f"\nSaving to {output_path}...")
     combined.write_h5ad(output_path)
 
@@ -340,28 +370,39 @@ def create_merged_communication_dataset():
 
 
 def main():
-    global SAMPLE_FRACTION
+    global SAMPLE_FRACTION, FORCE_REGENERATE
 
     parser = argparse.ArgumentParser(description='Prepare communication datasets for LIANA/NicheNet')
     parser.add_argument('--sample', type=float, default=None,
                         help='Sample fraction (e.g., 0.01 for 1%%). Default: use all data')
+    parser.add_argument('--force', action='store_true',
+                        help='Force regenerate even if output files exist')
+    parser.add_argument('--only', choices=['kuppe', 'merged'],
+                        help='Only generate specified dataset')
     args = parser.parse_args()
 
     SAMPLE_FRACTION = args.sample
+    FORCE_REGENERATE = args.force
 
     print("\n" + "#"*60)
     print("# Prepare Communication Datasets")
     if SAMPLE_FRACTION:
-        print(f"# MODE: Sampling {SAMPLE_FRACTION*100:.1f}%% of data")
+        print(f"# MODE: Sampling {SAMPLE_FRACTION*100:.1f}% of data")
     else:
         print("# MODE: Full data")
+    if FORCE_REGENERATE:
+        print("# FORCE: Will regenerate existing files")
     print("#"*60)
 
-    # Create Kuppe-only dataset first (smaller, faster)
-    create_kuppe_communication_dataset()
-
-    # Create merged dataset
-    create_merged_communication_dataset()
+    # Create datasets based on --only flag
+    if args.only == 'kuppe':
+        create_kuppe_communication_dataset()
+    elif args.only == 'merged':
+        create_merged_communication_dataset()
+    else:
+        # Create both
+        create_kuppe_communication_dataset()
+        create_merged_communication_dataset()
 
 
 if __name__ == "__main__":
