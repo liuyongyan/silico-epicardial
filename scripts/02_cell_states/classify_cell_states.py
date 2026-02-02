@@ -103,51 +103,21 @@ def assign_condition_labels(adata):
     Method 1: Assign cell state labels based on condition annotations.
 
     Quiescent: normal/healthy tissue
-    Activated: MI, ischemia, diseased tissue
+    Activated: MI tissue
     """
     print("\n" + "="*60)
     print("Method 1: Condition-based Classification")
     print("="*60)
 
-    # Initialize
-    adata.obs['condition_state'] = 'unknown'
+    # Simple classification based on disease annotation
+    # (Linna-Kuosmanen data only - PERIHEART and CAREBANK)
+    adata.obs['condition_state'] = adata.obs['disease'].map({
+        'normal': 'quiescent',
+        'myocardial infarction': 'activated'
+    }).fillna('unknown')
 
-    # Classification rules
-    for idx in adata.obs.index:
-        disease = adata.obs.loc[idx, 'disease']
-        dataset = adata.obs.loc[idx, 'dataset']
-
-        # Get spatial zone for Kuppe
-        major_labl = adata.obs.loc[idx, 'major_labl'] if 'major_labl' in adata.obs.columns else None
-
-        # Classify based on disease
-        if disease == 'normal':
-            if dataset == 'Kuppe_MI' and major_labl == 'CTRL':
-                adata.obs.loc[idx, 'condition_state'] = 'quiescent'
-            elif dataset in ['PERIHEART', 'CAREBANK']:
-                adata.obs.loc[idx, 'condition_state'] = 'quiescent'
-            else:
-                adata.obs.loc[idx, 'condition_state'] = 'quiescent'
-        elif disease in ['myocardial infarction', 'myocardial ischemia']:
-            # For Kuppe, further classify by spatial zone
-            if major_labl in ['IZ', 'BZ']:  # Ischemic/Border zone = high activation
-                adata.obs.loc[idx, 'condition_state'] = 'activated_high'
-            elif major_labl == 'FZ':  # Fibrotic zone = medium
-                adata.obs.loc[idx, 'condition_state'] = 'activated_medium'
-            elif major_labl == 'RZ':  # Remote zone = low activation
-                adata.obs.loc[idx, 'condition_state'] = 'activated_low'
-            else:
-                adata.obs.loc[idx, 'condition_state'] = 'activated'
-        elif disease in ['heart valve disorder', 'coronary artery disorder', 'heart failure']:
-            adata.obs.loc[idx, 'condition_state'] = 'diseased'
-        else:
-            adata.obs.loc[idx, 'condition_state'] = 'unknown'
-
-    # Simplify to binary for main analysis
-    adata.obs['condition_binary'] = adata.obs['condition_state'].apply(
-        lambda x: 'quiescent' if x == 'quiescent' else
-                  ('activated' if 'activated' in x else 'other')
-    )
+    # Binary classification (same as condition_state for our filtered data)
+    adata.obs['condition_binary'] = adata.obs['condition_state']
 
     # Summary
     print("\nCondition state distribution:")
@@ -304,8 +274,10 @@ def main():
     print("# Phase 2: Epicardial Cell State Classification")
     print("#"*60)
 
-    # Load and merge individual epicardial files
-    print("\nLoading individual epicardial datasets...")
+    # Load and merge individual epicardial files (Linna-Kuosmanen only)
+    # NOTE: Kuppe excluded - investigation showed no true epicardial cells in dataset
+    # (see README.md Section 3.1 for details)
+    print("\nLoading individual epicardial datasets (Linna-Kuosmanen only)...")
     datasets = []
 
     # PERIHEART
@@ -319,12 +291,6 @@ def main():
     carebank.obs['dataset'] = 'CAREBANK'
     print(f"  CAREBANK: {carebank.n_obs:,} cells")
     datasets.append(carebank)
-
-    # Kuppe
-    kuppe = ad.read_h5ad(PROCESSED_DIR / "epicardial_kuppe.h5ad")
-    kuppe.obs['dataset'] = 'Kuppe_MI'
-    print(f"  Kuppe: {kuppe.n_obs:,} cells")
-    datasets.append(kuppe)
 
     # Find common genes and merge
     print("\nMerging datasets...")
@@ -356,7 +322,7 @@ def main():
     print("Per-Dataset Summary")
     print("="*60)
 
-    for ds in ['PERIHEART', 'CAREBANK', 'Kuppe_MI']:
+    for ds in ['PERIHEART', 'CAREBANK']:
         mask = adata.obs['dataset'] == ds
         subset = adata.obs[mask]
         print(f"\n[{ds}]")

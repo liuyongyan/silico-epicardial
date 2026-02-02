@@ -58,31 +58,22 @@ epicardial-target-discovery/
 ├── README.md
 ├── data/
 │   ├── raw/
-│   │   ├── kuppe/
-│   │   │   └── 54d24dbe-*.h5ad          # Kuppe MI data (1.8GB, 191,795 cells)
 │   │   └── linna_kuosmanen/
 │   │       ├── 77df1b04-*.h5ad          # PERIHEART (2.6GB, 392,819 cells)
 │   │       └── 8e1afde5-*.h5ad          # CAREBANK (1.5GB, 221,756 cells)
-│   ├── processed/
-│   │   ├── epicardial_periheart.h5ad      # 19,412 cells (MI + Normal only)
-│   │   ├── epicardial_carebank.h5ad       # 13,512 cells (Normal only)
-│   │   ├── epicardial_kuppe.h5ad          # 10,087 cells (MI + Normal)
-│   │   ├── epicardial_with_states.h5ad    # 43,011 cells (with cell state labels)
-│   │   ├── communication_merged_sample.h5ad  # 1% sample for testing
-│   │   ├── communication_kuppe_sample.h5ad   # 1% sample for testing
-│   │   ├── kuppe_cell_metadata.csv
-│   │   └── kuppe_gene_metadata.csv
-│   └── references/
+│   └── processed/
+│       ├── epicardial_periheart.h5ad    # 19,412 cells (MI + Normal only)
+│       ├── epicardial_carebank.h5ad     # 13,512 cells (Normal only)
+│       └── epicardial_with_states.h5ad  # 32,924 cells (with cell state labels)
 ├── scripts/
 │   ├── 01_preprocessing/
-│   │   ├── analyze_kuppe.py
-│   │   ├── extract_epicardial_simple.py
-│   │   ├── extract_kuppe_epicardial.py
-│   │   ├── compare_epicardial_scores.py
-│   │   ├── normalize_and_compare.py
-│   │   └── merge_epicardial_datasets.py
-│   └── 02_cell_states/
-│       └── classify_cell_states.py
+│   │   └── extract_epicardial_simple.py
+│   ├── 02_cell_states/
+│   │   └── classify_cell_states.py
+│   └── 03_communication/
+│       ├── 01_deg_analysis.py
+│       ├── 02_liana_analysis.py
+│       └── 03_nichenet_analysis.py
 └── papers/
 ```
 
@@ -96,21 +87,21 @@ epicardial-target-discovery/
   - Linna-Kuosmanen: **~49,000 mesothelial cells** (7-9% of total) - best source!
 - [x] Verify epicardial markers present: WT1, TBX18, ALDH1A2, UPK3B, MSLN
 - [x] Set up Python-based workflow (scanpy/anndata)
-- [x] Extract epicardial cells from all datasets:
-  - Linna-Kuosmanen: filtered by `cell_type == 'mesothelial cell'` (49,344 cells)
-  - Kuppe: filtered by marker score (95th percentile) + adipocyte annotation (10,087 cells)
+- [x] Extract epicardial cells from Linna-Kuosmanen:
+  - PERIHEART + CAREBANK: filtered by `cell_type == 'mesothelial cell'` (32,924 cells after disease filtering)
+  - Kuppe excluded: investigation showed no true epicardial cells in dataset (see Section 3.1)
 - [x] Harmonize normalization across datasets:
   - Discovered: Linna-Kuosmanen uses CPM, Kuppe uses log1p(CPM)
   - Applied log1p to Linna-Kuosmanen for consistency
   - Verified score comparability (ratio 1.40x)
-- [x] Merge all datasets into `epicardial_all_merged.h5ad` (59,431 cells, 28,380 genes)
+- [x] Merge Linna-Kuosmanen datasets into `epicardial_with_states.h5ad` (32,924 cells)
 - [x] **Filter to MI and Normal only** (removed heart valve disorder, coronary artery disorder, heart failure, myocardial ischemia)
-- [x] Re-run Phase 2 cell state classification on filtered data (43,011 cells)
+- [x] Re-run Phase 2 cell state classification on filtered data (32,924 cells, Linna-Kuosmanen only)
 - [x] Phase 2: Define cell states with dual-method validation:
   - Method 1: Condition-based (disease annotations)
   - Method 2: Score-based (EMT + proliferation signatures)
-  - Cross-validation agreement: 59.0%
-  - Four states: activated (3,695), bystander (10,585), primed (7,058), quiescent (21,673)
+  - Cross-validation agreement: 64.9%
+  - Four states: activated (1,562), bystander (4,877), primed (6,669), quiescent (19,816)
   - Output: `epicardial_with_states.h5ad`
 
 ### Next Steps
@@ -148,6 +139,8 @@ epicardial-target-discovery/
 - Epicardial markers present: WT1, TBX18, ALDH1A2, UPK3B (MSLN not annotated)
 - Only ~523 "adipocyte" cells labeled; true epicardial cells likely mixed in Fibroblast population
 
+> **⚠️ Excluded from epicardial analysis:** After investigation, we found that the Kuppe dataset does NOT contain true epicardial/mesothelial cells. The paper identifies 10 major cell types (cardiomyocytes, fibroblasts, endothelial, myeloid, lymphoid, mast, adipocytes, neuronal, pericytes, vSMCs) but no epicardial cells. Tissue was sampled from left ventricular myocardium without the epicardial surface layer. Cells we selected using epicardial markers (UPK3B, WT1) showed only 0.2% UPK3B expression and 0% KRT19 expression, indicating they are EPDCs (epicardial-derived cells that have undergone EMT) rather than true mesothelial cells. These EPDCs have fundamentally different expression profiles (e.g., 10x lower FGFR2 baseline) which would confound DEG analysis. We therefore use only Linna-Kuosmanen data for epicardial cell analysis.
+
 #### Linna-Kuosmanen et al. 2024 (Cell Reports Medicine)
 
 Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
@@ -165,16 +158,14 @@ Two cohorts from Finnish cardiac surgery patients (right atrium tissue):
 
 ### 3.2 Disease Condition Filtering
 
-> **Note:** Raw data from CellxGene was pre-processed by the original authors (QC, normalization). We applied additional harmonization (see Section 3.3).
+> **Note:** Raw data from CellxGene was pre-processed by the original authors (QC, normalization). We apply log1p transformation during extraction (see Section 3.3).
 
 **Rationale:** To ensure clean comparisons between MI-activated and normal quiescent epicardial cells, we filter out samples with other disease conditions that may confound the analysis.
 
-**Disease conditions in raw data:**
+**Disease conditions in raw data (Linna-Kuosmanen only):**
 
 | Dataset | Disease | Cells | Action |
 |---------|---------|-------|--------|
-| **Kuppe** | myocardial infarction | 150,132 | ✅ Keep |
-| **Kuppe** | normal | 41,663 | ✅ Keep |
 | **PERIHEART** | myocardial infarction | 18,234 | ✅ Keep |
 | **PERIHEART** | normal | 217,167 | ✅ Keep |
 | **PERIHEART** | heart valve disorder | 135,515 | ❌ Remove |
@@ -196,33 +187,26 @@ adata = adata[adata.obs['disease'].isin(keep_conditions)]
 
 | Dataset | MI | Normal | Total |
 |---------|-----|--------|-------|
-| Kuppe | ~8,100 | ~1,900 | ~10,000 |
 | PERIHEART | 6,439 | 12,973 | 19,412 |
 | CAREBANK | 0 | 13,512 | 13,512 |
-| **Total** | **~14,500** | **~28,400** | **~42,900** |
+| **Total** | **6,439** | **26,485** | **32,924** |
 
 *Sender cells (cardiomyocytes, fibroblasts, endothelial, macrophages):*
 
 | Dataset | MI | Normal | Total |
 |---------|-----|--------|-------|
-| Kuppe | ~121,000 | ~35,000 | ~156,000 |
 | PERIHEART | 11,162 | 192,630 | 203,792 |
 | CAREBANK | 0 | 126,400 | 126,400 |
-| **Total** | **~132,000** | **~354,000** | **~486,000** |
-
-*Grand total after filtering: ~529,000 cells (MI: ~147k, Normal: ~383k)*
+| **Total** | **11,162** | **319,030** | **330,192** |
 
 
-### 3.3 Normalization Harmonization
+### 3.3 Normalization
 
-**Issue Discovered:** The two data sources use different normalization methods:
+> **Note:** Since we now use only Linna-Kuosmanen data, normalization is straightforward.
 
-| Dataset | Original Format | Expression Range | Notes |
-|---------|----------------|------------------|-------|
-| **Linna-Kuosmanen** | CPM/TPM (linear) | 0 - 2500 | No log transformation |
-| **Kuppe** | log1p(CPM) | 0 - 8 | Already normalized |
+**Linna-Kuosmanen format:** CPM (counts per million), linear scale (range 0-2500)
 
-**Solution:** Apply `log1p` transformation to Linna-Kuosmanen data during extraction, before any expression-based analysis.
+**Transformation:** Apply `log1p` during extraction for standard scRNA-seq analysis scale:
 
 ```python
 # Check if normalization needed (max > 50 indicates linear CPM scale)
@@ -230,13 +214,12 @@ if sparse_matrix.data.max() > 50:
     sparse_matrix.data = np.log1p(sparse_matrix.data)
 ```
 
-**After normalization, all datasets have consistent scale:**
+**After transformation:**
 
 | Dataset | Expression Range | Scale |
 |---------|------------------|-------|
 | PERIHEART | 0 - 7.9 | log1p(CPM) ✓ |
 | CAREBANK | 0 - 7.1 | log1p(CPM) ✓ |
-| Kuppe | 0 - 8.4 | log1p(CPM) ✓ |
 
 ### 3.4 Epicardial Cell Identification
 
@@ -258,13 +241,11 @@ if sparse_matrix.data.max() > 50:
 - VIM (Vimentin)
 
 **Cell selection methods:**
-- Linna-Kuosmanen: `cell_type == 'mesothelial cell'` (metadata-based)
-- Kuppe: `epicardial_score > 95th percentile` (marker expression-based, on normalized data)
+- Linna-Kuosmanen: `cell_type == 'mesothelial cell'` (metadata-based, reliable annotation)
 
 **Output files:**
 - `data/processed/epicardial_periheart.h5ad` (19,412 cells)
 - `data/processed/epicardial_carebank.h5ad` (13,512 cells)
-- `data/processed/epicardial_kuppe.h5ad` (10,087 cells)
 
 ---
 
@@ -319,23 +300,23 @@ if sparse_matrix.data.max() > 50:
 - Combine into z-normalized `activation_score = (prolif_z + emt_z) / 2`
 - Activated: `activation_score > 75th percentile`
 
-**Cross-validation results (after disease filtering to MI + Normal only):**
+**Cross-validation results (Linna-Kuosmanen data only, MI + Normal):**
 
 | Metric | Value |
 |--------|-------|
-| Total cells | 43,011 |
-| Agreement rate | 68.1% |
-| Activated (condition) mean activation score | +0.22 |
-| Quiescent (condition) mean activation score | -0.11 |
+| Total cells | 32,924 |
+| Agreement rate | 64.9% |
+| Activated (condition) mean activation score | +0.019 |
+| Quiescent (condition) mean activation score | -0.005 |
 
 **Cell State Classification (Option A naming):**
 
 | State | Count | % | Definition |
 |-------|-------|---|------------|
-| **quiescent** | 23,630 | 54.9% | Normal + low molecular score (resting) |
-| **bystander** | 8,628 | 20.1% | MI + low molecular score (non-responding) |
-| **activated** | 5,652 | 13.1% | MI + high molecular score (true responders) |
-| **primed** | 5,101 | 11.9% | Normal + high molecular score (constitutively active) |
+| **quiescent** | 19,816 | 60.2% | Normal + low molecular score (resting) |
+| **primed** | 6,669 | 20.3% | Normal + high molecular score (constitutively active) |
+| **bystander** | 4,877 | 14.8% | MI + low molecular score (non-responding) |
+| **activated** | 1,562 | 4.7% | MI + high molecular score (true responders) |
 
 **Biological interpretation:**
 - **activated**: True responders - epicardial cells in MI tissue with strong EMT/proliferation signature
@@ -347,11 +328,10 @@ if sparse_matrix.data.max() > 50:
 
 | Dataset | activated | bystander | primed | quiescent | Mean Score |
 |---------|-----------|-----------|--------|-----------|------------|
-| Kuppe_MI | 4,674 | 3,167 | 1,306 | 940 | +0.51 |
-| PERIHEART | 978 | 5,461 | 2,285 | 10,688 | -0.10 |
-| CAREBANK | 0 | 0 | 1,510 | 12,002 | -0.23 |
+| PERIHEART | 1,562 | 4,877 | 3,933 | 9,040 | +0.07 |
+| CAREBANK | 0 | 0 | 2,736 | 10,776 | -0.10 |
 
-**Key insight:** 13.1% of epicardial cells are truly "activated" (MI + high molecular score). The "bystander" population (20.1%) represents cells in MI tissue that haven't activated their EMT/proliferation programs, suggesting spatial or temporal heterogeneity in epicardial response.
+**Key insight:** With Kuppe excluded, 4.7% of true epicardial cells are "activated" (MI + high molecular score). PERIHEART is the only dataset with MI samples containing true epicardial cells. The "bystander" population (14.8%) represents cells in MI tissue that haven't activated their EMT/proliferation programs.
 
 ### 4.4 Prepare Communication Datasets
 
@@ -363,24 +343,22 @@ Extract sender cells from raw data and merge with epicardial cells for L-R analy
 - Fibroblasts
 - Endothelial cells
 
-**Data sources:**
+**Data source:** Linna-Kuosmanen (PERIHEART + CAREBANK)
 
 | Dataset | Tissue | Sender cells | Notes |
 |---------|--------|--------------|-------|
-| **Kuppe** | Left ventricle | ✅ All 4 types | MI context, has spatial zones (IZ/BZ/FZ/RZ) |
-| **Linna-Kuosmanen** | Right atrium | ✅ All 4 types | Cardiac surgery patients |
+| **PERIHEART** | Right atrium | ✅ All 4 types | MI + Normal samples |
+| **CAREBANK** | Right atrium | ✅ All 4 types | Normal samples only |
 
-**Output datasets:**
+**Output dataset:**
 
 | File | Contents | Purpose |
 |------|----------|---------|
-| `communication_merged.h5ad` | All epicardial + all sender (both datasets, batch-corrected) | Main analysis |
-| `communication_kuppe.h5ad` | Kuppe epicardial + Kuppe sender only | MI-specific validation |
+| `communication_linna.h5ad` | Epicardial + sender cells (Linna-Kuosmanen only) | Main analysis |
 
 **Analysis strategy:**
-- **Main analysis**: Use merged dataset for maximum statistical power
-- **Validation**: Compare with Kuppe-only results to confirm MI-specific signals
-- Top L-R pairs consistent across both = high-confidence targets
+- Use PERIHEART for MI vs Normal comparisons (has both conditions)
+- CAREBANK provides additional normal tissue baseline
 
 ### 4.5 Temporal Labeling (Not Used)
 
