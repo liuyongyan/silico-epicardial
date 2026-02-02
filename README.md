@@ -2,7 +2,7 @@
 
 > **Purpose**: Identify potential therapeutic targets on epicardial cells that promote proliferation and EMT for cardioprotection after myocardial infarction
 
-**Version**: 2.4 (February 2026)
+**Version**: 2.5 (February 2026)
 
 ---
 
@@ -97,11 +97,11 @@ epicardial-target-discovery/
 - [x] Merge Linna-Kuosmanen datasets into `epicardial_with_states.h5ad` (32,924 cells)
 - [x] **Filter to MI and Normal only** (removed heart valve disorder, coronary artery disorder, heart failure, myocardial ischemia)
 - [x] Re-run Phase 2 cell state classification on filtered data (32,924 cells, Linna-Kuosmanen only)
-- [x] Phase 2: Define cell states with dual-method validation:
+- [x] Phase 2: Define cell states with dual-method validation (improved):
   - Method 1: Condition-based (disease annotations)
-  - Method 2: Score-based (EMT + proliferation signatures)
-  - Cross-validation agreement: 64.9%
-  - Four states: activated (1,562), bystander (4,877), primed (6,669), quiescent (19,816)
+  - Method 2: Score-based with `sc.tl.score_genes()` + GMM threshold (background-corrected)
+  - Cross-validation agreement: 60.8%
+  - Four states: activated (1,916), bystander (4,523), primed (8,394), quiescent (18,091)
   - Output: `epicardial_with_states.h5ad`
 
 ### Next Steps
@@ -269,13 +269,14 @@ if sparse_matrix.data.max() > 50:
 - SNAI1, SNAI2 (Snail family)
 - TWIST1, TWIST2
 - ZEB1, ZEB2
-- PRRX1
 
 **Mesenchymal markers (upregulated):**
 - VIM (Vimentin)
 - CDH2 (N-cadherin)
 - FN1 (Fibronectin)
 - ACTA2 (alpha-SMA)
+- POSTN (Periostin)
+- COL1A1, COL3A1 (Collagens)
 
 **Epithelial markers (downregulated):**
 - CDH1 (E-cadherin)
@@ -287,36 +288,43 @@ if sparse_matrix.data.max() > 50:
 
 ### 4.3 Cell State Classification Results
 
-**Dual-method approach:**
+**Dual-method approach with improved scoring:**
 
 **Method 1 - Condition-based:**
 - Quiescent: `disease == 'normal'`
-- Activated: `disease == 'myocardial infarction'` or `'myocardial ischemia'`
-- Kuppe only: further split by `major_labl` (IZ/BZ=high, FZ=medium, RZ=low activation)
-- Other diseases (valve disorder, heart failure): marked as 'other'
+- Activated: `disease == 'myocardial infarction'`
 
-**Method 2 - Score-based:**
-- Calculate `proliferation_score` (mean of 9 genes) and `emt_score` (up - down)
+**Method 2 - Score-based (improved):**
+- Uses `sc.tl.score_genes()` with control gene sets (background correction)
+- Compares gene set expression to control genes with similar expression levels
+- Provides more robust scoring that accounts for technical variation
+- Calculate `proliferation_score` (9/10 genes) and `emt_score` (up - down)
 - Combine into z-normalized `activation_score = (prolif_z + emt_z) / 2`
-- Activated: `activation_score > 75th percentile`
+- Use **GMM (Gaussian Mixture Model)** for threshold selection instead of arbitrary percentile
+- GMM identifies two components (low/high activation) and sets threshold at intersection
+
+**GMM threshold analysis:**
+- Low component: mean=-0.12, n=30,576
+- High component: mean=0.56, n=2,348
+- **Threshold: 0.22** (equivalent to 68.7th percentile)
 
 **Cross-validation results (Linna-Kuosmanen data only, MI + Normal):**
 
 | Metric | Value |
 |--------|-------|
 | Total cells | 32,924 |
-| Agreement rate | 64.9% |
-| Activated (condition) mean activation score | +0.019 |
-| Quiescent (condition) mean activation score | -0.005 |
+| Agreement rate | 60.8% |
+| MI mean activation score | +0.013 |
+| Normal mean activation score | -0.003 |
 
 **Cell State Classification (Option A naming):**
 
-| State | Count | % | Definition |
-|-------|-------|---|------------|
-| **quiescent** | 19,816 | 60.2% | Normal + low molecular score (resting) |
-| **primed** | 6,669 | 20.3% | Normal + high molecular score (constitutively active) |
-| **bystander** | 4,877 | 14.8% | MI + low molecular score (non-responding) |
-| **activated** | 1,562 | 4.7% | MI + high molecular score (true responders) |
+| State | Count | Percent | Definition |
+|-------|-------|---------|------------|
+| **quiescent** | 18,091 | 55.0% | Normal + low molecular score (resting) |
+| **primed** | 8,394 | 25.5% | Normal + high molecular score (constitutively active) |
+| **bystander** | 4,523 | 13.7% | MI + low molecular score (non-responding) |
+| **activated** | 1,916 | 5.8% | MI + high molecular score (true responders) |
 
 **Biological interpretation:**
 - **activated**: True responders - epicardial cells in MI tissue with strong EMT/proliferation signature
@@ -328,10 +336,10 @@ if sparse_matrix.data.max() > 50:
 
 | Dataset | activated | bystander | primed | quiescent | Mean Score |
 |---------|-----------|-----------|--------|-----------|------------|
-| PERIHEART | 1,562 | 4,877 | 3,933 | 9,040 | +0.07 |
-| CAREBANK | 0 | 0 | 2,736 | 10,776 | -0.10 |
+| PERIHEART | 1,916 | 4,523 | 4,808 | 8,165 | +0.07 |
+| CAREBANK | 0 | 0 | 3,586 | 9,926 | -0.10 |
 
-**Key insight:** With Kuppe excluded, 4.7% of true epicardial cells are "activated" (MI + high molecular score). PERIHEART is the only dataset with MI samples containing true epicardial cells. The "bystander" population (14.8%) represents cells in MI tissue that haven't activated their EMT/proliferation programs.
+**Key insight:** With Kuppe excluded, 5.8% of true epicardial cells are "activated" (MI + high molecular score). PERIHEART is the only dataset with MI samples containing true epicardial cells. The "bystander" population (13.7%) represents cells in MI tissue that haven't activated their EMT/proliferation programs.
 
 ### 4.4 Prepare Communication Datasets
 

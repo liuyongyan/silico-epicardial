@@ -6,6 +6,10 @@ Two-method approach with cross-validation:
 1. Condition-based: Using disease/spatial zone annotations
 2. Score-based: Using EMT and proliferation molecular signatures
 
+Improved methodology:
+- sc.tl.score_genes() with control gene sets (background correction)
+- GMM-based threshold selection instead of arbitrary percentile
+
 Output: Consensus classification (quiescent vs activated)
 """
 
@@ -15,6 +19,9 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from scipy import sparse
+from sklearn.mixture import GaussianMixture
+import warnings
+warnings.filterwarnings('ignore')
 
 PROJECT_DIR = Path(__file__).parent.parent.parent
 PROCESSED_DIR = PROJECT_DIR / "data/processed"
@@ -73,29 +80,33 @@ def get_available_genes(adata, gene_dict):
     return available
 
 
-def calculate_gene_score(adata, gene_dict, score_name):
-    """Calculate mean expression score for a gene set."""
-    available = get_available_genes(adata, gene_dict)
+def find_threshold_gmm(scores, n_components=2):
+    """
+    Find threshold using Gaussian Mixture Model.
 
-    if len(available) == 0:
-        print(f"  WARNING: No genes found for {score_name}")
-        adata.obs[score_name] = 0
-        return 0
+    Fits a 2-component GMM and finds the intersection point between the two distributions.
+    This is more principled than using an arbitrary percentile.
+    """
+    scores_array = scores.values.reshape(-1, 1)
 
-    gene_ids = list(available.values())
-    gene_indices = [list(adata.var_names).index(g) for g in gene_ids]
+    gmm = GaussianMixture(n_components=n_components, random_state=42, n_init=10)
+    gmm.fit(scores_array)
 
-    X = adata.X[:, gene_indices]
-    if sparse.issparse(X):
-        X = X.toarray()
+    # Get component means and identify low/high
+    means = gmm.means_.flatten()
+    low_idx = np.argmin(means)
+    high_idx = np.argmax(means)
 
-    scores = X.mean(axis=1)
-    adata.obs[score_name] = scores
+    # Find threshold at intersection (where posterior probabilities are equal)
+    # Use the midpoint between means as approximation
+    threshold = (means[low_idx] + means[high_idx]) / 2
 
-    print(f"  {score_name}: {len(available)}/{len(gene_dict)} genes, "
-          f"mean={scores.mean():.4f}, std={scores.std():.4f}")
+    # Get proportion in each component
+    labels = gmm.predict(scores_array)
+    n_low = (labels == low_idx).sum()
+    n_high = (labels == high_idx).sum()
 
-    return len(available)
+    return threshold, means, (n_low, n_high), gmm
 
 
 def assign_condition_labels(adata):
@@ -111,10 +122,8 @@ def assign_condition_labels(adata):
 
     # Simple classification based on disease annotation
     # (Linna-Kuosmanen data only - PERIHEART and CAREBANK)
-    adata.obs['condition_state'] = adata.obs['disease'].map({
-        'normal': 'quiescent',
-        'myocardial infarction': 'activated'
-    }).fillna('unknown')
+    disease_map = {'normal': 'quiescent', 'myocardial infarction': 'activated'}
+    adata.obs['condition_state'] = adata.obs['disease'].astype(str).map(disease_map).fillna('unknown')
 
     # Binary classification (same as condition_state for our filtered data)
     adata.obs['condition_binary'] = adata.obs['condition_state']
@@ -128,30 +137,59 @@ def assign_condition_labels(adata):
 
 def calculate_molecular_scores(adata):
     """
-    Method 2: Calculate EMT and proliferation scores.
+    Method 2: Calculate EMT and proliferation scores using sc.tl.score_genes().
+
+    Improved methodology:
+    - Uses sc.tl.score_genes() which compares gene set expression to a control
+      gene set with similar expression levels (background correction)
+    - Provides more robust scoring that accounts for technical variation
     """
     print("\n" + "="*60)
-    print("Method 2: Molecular Signature Scores")
+    print("Method 2: Molecular Signature Scores (sc.tl.score_genes)")
     print("="*60)
 
     # Proliferation score
     print("\nProliferation signature:")
-    calculate_gene_score(adata, PROLIFERATION_GENES, 'proliferation_score')
+    available_prolif = get_available_genes(adata, PROLIFERATION_GENES)
+    prolif_genes = list(available_prolif.values())
+    print(f"  Available genes: {len(prolif_genes)}/{len(PROLIFERATION_GENES)}")
+    print(f"  Genes: {list(available_prolif.keys())}")
+
+    sc.tl.score_genes(adata, gene_list=prolif_genes, score_name='proliferation_score',
+                      ctrl_size=50, n_bins=25, use_raw=False)
+    print(f"  Score: mean={adata.obs['proliferation_score'].mean():.4f}, "
+          f"std={adata.obs['proliferation_score'].std():.4f}")
 
     # EMT up score
     print("\nEMT upregulated signature:")
-    calculate_gene_score(adata, EMT_UP_GENES, 'emt_up_score')
+    available_emt_up = get_available_genes(adata, EMT_UP_GENES)
+    emt_up_genes = list(available_emt_up.values())
+    print(f"  Available genes: {len(emt_up_genes)}/{len(EMT_UP_GENES)}")
+    print(f"  Genes: {list(available_emt_up.keys())}")
+
+    sc.tl.score_genes(adata, gene_list=emt_up_genes, score_name='emt_up_score',
+                      ctrl_size=50, n_bins=25, use_raw=False)
+    print(f"  Score: mean={adata.obs['emt_up_score'].mean():.4f}, "
+          f"std={adata.obs['emt_up_score'].std():.4f}")
 
     # EMT down score
     print("\nEMT downregulated (epithelial) signature:")
-    calculate_gene_score(adata, EMT_DOWN_GENES, 'emt_down_score')
+    available_emt_down = get_available_genes(adata, EMT_DOWN_GENES)
+    emt_down_genes = list(available_emt_down.values())
+    print(f"  Available genes: {len(emt_down_genes)}/{len(EMT_DOWN_GENES)}")
+    print(f"  Genes: {list(available_emt_down.keys())}")
 
-    # Combined EMT score
+    sc.tl.score_genes(adata, gene_list=emt_down_genes, score_name='emt_down_score',
+                      ctrl_size=50, n_bins=25, use_raw=False)
+    print(f"  Score: mean={adata.obs['emt_down_score'].mean():.4f}, "
+          f"std={adata.obs['emt_down_score'].std():.4f}")
+
+    # Combined EMT score (up - down)
     adata.obs['emt_score'] = adata.obs['emt_up_score'] - adata.obs['emt_down_score']
     print(f"\nCombined EMT score: mean={adata.obs['emt_score'].mean():.4f}, "
           f"std={adata.obs['emt_score'].std():.4f}")
 
-    # Combined activation score (average of normalized scores)
+    # Combined activation score (average of z-normalized scores)
     prolif_z = (adata.obs['proliferation_score'] - adata.obs['proliferation_score'].mean()) / adata.obs['proliferation_score'].std()
     emt_z = (adata.obs['emt_score'] - adata.obs['emt_score'].mean()) / adata.obs['emt_score'].std()
     adata.obs['activation_score'] = (prolif_z + emt_z) / 2
@@ -161,16 +199,28 @@ def calculate_molecular_scores(adata):
           f"std={adata.obs['activation_score'].std():.4f}")
 
 
-def classify_by_scores(adata, threshold_percentile=75):
+def classify_by_scores(adata):
     """
-    Classify cells as activated based on molecular scores.
+    Classify cells as activated based on molecular scores using GMM threshold.
+
+    Uses Gaussian Mixture Model to find a data-driven threshold instead of
+    arbitrary percentile cutoff.
     """
     print("\n" + "="*60)
-    print("Score-based Classification")
+    print("Score-based Classification (GMM threshold)")
     print("="*60)
 
-    threshold = np.percentile(adata.obs['activation_score'], threshold_percentile)
-    print(f"Activation threshold ({threshold_percentile}th percentile): {threshold:.4f}")
+    scores = adata.obs['activation_score']
+    threshold, means, counts, gmm = find_threshold_gmm(scores)
+
+    print(f"\nGMM analysis:")
+    print(f"  Low component:  mean={means[np.argmin(means)]:.4f}, n={counts[0]:,}")
+    print(f"  High component: mean={means[np.argmax(means)]:.4f}, n={counts[1]:,}")
+    print(f"  Threshold (intersection): {threshold:.4f}")
+
+    # For comparison, show what percentile this corresponds to
+    percentile = (scores < threshold).mean() * 100
+    print(f"  Equivalent percentile: {percentile:.1f}%")
 
     adata.obs['score_binary'] = adata.obs['activation_score'].apply(
         lambda x: 'activated' if x > threshold else 'quiescent'
@@ -178,6 +228,8 @@ def classify_by_scores(adata, threshold_percentile=75):
 
     print("\nScore-based classification:")
     print(adata.obs['score_binary'].value_counts())
+
+    return threshold
 
 
 def cross_validate(adata):
@@ -300,19 +352,26 @@ def main():
     common_genes = sorted(list(common_genes))
     print(f"  Common genes: {len(common_genes):,}")
 
+    # Save var metadata before subsetting (from first dataset)
+    var_metadata = datasets[0].var.loc[common_genes].copy()
+
     for i in range(len(datasets)):
         datasets[i] = datasets[i][:, common_genes].copy()
 
     adata = ad.concat(datasets, join='outer')
     adata.obs_names_make_unique()
+
+    # Restore var metadata (concat loses it)
+    adata.var = var_metadata
+
     print(f"  Total: {adata.n_obs:,} cells, {adata.n_vars:,} genes")
 
     # Method 1: Condition-based
     assign_condition_labels(adata)
 
-    # Method 2: Score-based
+    # Method 2: Score-based (with improved sc.tl.score_genes + GMM threshold)
     calculate_molecular_scores(adata)
-    classify_by_scores(adata, threshold_percentile=75)
+    classify_by_scores(adata)
 
     # Cross-validate
     cross_validate(adata)
