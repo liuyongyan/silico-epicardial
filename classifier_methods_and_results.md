@@ -86,7 +86,7 @@ Genes added via DE-based augmentation across iterations:
 
 ### Top Classifier Features (L1-LR, Iteration 3)
 
-| Rank | Gene | Importance (|coef|) |
+| Rank | Gene | Importance (coef) |
 |---|---|---|
 | 1 | PTGDS | 1.437 |
 | 2 | CRYAB | 1.062 |
