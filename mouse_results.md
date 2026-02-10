@@ -91,6 +91,51 @@ These are all typical EMT/fibrosis-related genes, consistent with FGFR2's activa
 
 ---
 
+#### FGFR2 Ranking Among Receptors
+
+To better contextualize FGFR2's role, we filtered for known receptor genes (based on GO annotations) and ranked them by logFC:
+
+**Overall receptor statistics:**
+- Total receptors with significant DE: 1,310
+- Upregulated in Activated: 623
+- Upregulated in Quiescent: 687
+
+**FGFR2 ranking among receptors:**
+
+| Metric | Value |
+|--------|-------|
+| Rank among all receptors | **319 / 1,310** (top 24.4%) |
+| Rank among upregulated receptors | **319 / 623** (top 51.2%) |
+| logFC | +4.81 |
+
+**FGF receptor family:**
+
+| Rank | Gene | logFC | padj | Direction |
+|------|------|-------|------|-----------|
+| **319** | **Fgfr2** | **+4.81** | 3.7e-33 | **↑ Activated** |
+| 1155 | Fgfr1 | -25.93 | 1.1e-19 | ↓ Quiescent |
+
+**FGFR2 is the only FGF receptor upregulated in activated epicardial cells.**
+
+**Comparison with other signaling pathway receptors:**
+
+| Rank | Gene | logFC | Pathway |
+|------|------|-------|---------|
+| 232 | Egfr | +9.12 | EGF |
+| 239 | Tgfbr1 | +8.33 | TGF-β |
+| 306 | Notch3 | +5.47 | Notch |
+| **319** | **Fgfr2** | **+4.81** | **FGF** |
+| 332 | Notch1 | +4.40 | Notch |
+| 626 | Pdgfrb | -0.01 | PDGF |
+| 631 | Igf1r | -0.05 | IGF |
+| 1078 | Tgfbr2 | -15.31 | TGF-β |
+| 1166 | Kdr (Vegfr2) | -27.74 | VEGF |
+| 1280 | Pdgfra | -128.64 | PDGF |
+
+**Key observation**: FGFR2 ranks among the top activated-state receptors, alongside well-established EMT/fibrosis pathway receptors (EGFR, TGFBR1, NOTCH1/3). This places FGFR2 in the same functional category as known drivers of epicardial activation.
+
+---
+
 #### FGF Family Expression (MI vs Normal)
 
 | Gene  | Normal Mean | MI Mean | log2FC | p-value |
@@ -227,3 +272,4 @@ These are all typical EMT/fibrosis-related genes, consistent with FGFR2's activa
 - `results/mouse/quaife_ryan_fgf_summary.csv` - FGF expression summary
 - `results/mouse/top100_upregulated_in_activated.csv` - Top 100 activated markers
 - `results/mouse/top100_upregulated_in_quiescent.csv` - Top 100 quiescent markers
+- `results/mouse/receptor_rankings_by_logfc.csv` - All receptors ranked by logFC
