@@ -4,13 +4,12 @@ papers/
 # Data directory (large files, download separately)
 data/
 
-results/
-
 # Data files (backup patterns)
 *.h5ad
 *.rds
 *.RData
-*.csv
+# Keep results/*.csv trackable
+!/results/**/*.csv
 
 # Python
 __pycache__/
