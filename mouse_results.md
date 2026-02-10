@@ -8,17 +8,17 @@ Find computational evidence supporting FGF10/FGFR2 as a key ligand-receptor pair
 
 ## Why Quaife-Ryan 2021 First?
 
-我们优先分析 Quaife-Ryan 2021 数据集，原因如下：
+We prioritized the Quaife-Ryan 2021 dataset for the following reasons:
 
 | Dataset | Quaife-Ryan 2021 | Forte et al. | Farbehi et al. |
 |---------|------------------|--------------|----------------|
-| **细胞类型** | 专门分离的心外膜细胞 (EpiSC) | 全心脏细胞 | 全心脏细胞 |
-| **分离方法** | 新型灌注法专门富集心外膜 | 标准酶解 | 标准酶解 |
-| **细胞数量** | 112,676 EpiSC | ~50,000 混合 | ~30,000 混合 |
-| **需要筛选** | 不需要（全是心外膜） | 需要从混合细胞中筛选 | 需要从混合细胞中筛选 |
-| **数据质量** | 高（专门针对心外膜优化） | 中等 | 中等 |
+| **Cell Type** | Dedicated epicardial cells (EpiSC) | Whole heart cells | Whole heart cells |
+| **Isolation** | Novel perfusion method for epicardium | Standard enzymatic digestion | Standard enzymatic digestion |
+| **Cell Count** | 112,676 EpiSC | ~50,000 mixed | ~30,000 mixed |
+| **Filtering Needed** | No (all epicardial) | Yes, need to identify from mixed | Yes, need to identify from mixed |
+| **Data Quality** | High (optimized for epicardium) | Moderate | Moderate |
 
-**结论**：Quaife-Ryan 数据是目前最大、最纯净的小鼠心外膜单细胞数据集，直接可用于分析，无需额外筛选步骤。其他数据集需要先从混合细胞中识别心外膜细胞（基于 Wt1、Upk3b 等标记），这会引入额外的技术噪音。
+**Conclusion**: Quaife-Ryan is currently the largest and purest mouse epicardial single-cell dataset, directly usable without additional filtering steps. Other datasets require identifying epicardial cells from mixed populations (based on Wt1, Upk3b markers), which introduces additional technical noise.
 
 ---
 
@@ -60,20 +60,20 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 **MI dramatically shifts epicardial cells toward an activated state.**
 
 ![Cell State Classification](results/mouse/classification_explanation.png)
-*图1：细胞状态分类方法。左：基于 state_potential (activated_score - quiescent_score) 的GMM双峰分布；右：激活概率分布，0.3-0.7为过渡态。*
+*Figure 1: Cell state classification method. Left: GMM bimodal distribution based on state_potential (activated_score - quiescent_score); Right: Activation probability distribution, 0.3-0.7 indicates transitional state.*
 
 ---
 
 #### FGFR2 Ranking in Differential Expression
 
-在 Activated vs Quiescent 差异表达分析中，共有 **12,522 个显著差异基因** (padj < 0.05)：
-- 5,759 个基因在 Activated 中上调
-- 6,601 个基因在 Quiescent 中上调
+In the Activated vs Quiescent differential expression analysis, there were **12,522 significantly differentially expressed genes** (padj < 0.05):
+- 5,759 genes upregulated in Activated cells
+- 6,601 genes upregulated in Quiescent cells
 
-**FGF家族基因排名：**
+**FGF family gene rankings:**
 
-| Gene | 排名 | logFC | padj | 方向 |
-|------|------|-------|------|------|
+| Gene | Rank | logFC | padj | Direction |
+|------|------|-------|------|-----------|
 | **Fgfr2** | **7,512 / 23,621** | +4.81 | 3.7e-33 | ↑ Activated |
 | Fgf2 | 6,750 / 23,621 | -3.87 | 3.6e-46 | ↓ Quiescent |
 | Fgf7 | 8,364 / 23,621 | -4.87 | 1.5e-21 | ↓ Quiescent |
@@ -82,12 +82,12 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 | Fgf10 | 11,552 / 23,621 | -5.09 | 1.8e-03 | ↓ Quiescent |
 | Fgfr3 | 13,939 / 23,621 | -1.07 | 4.8e-01 | NS |
 
-**关键发现：FGFR2 是 FGF 家族中唯一在 Activated 细胞中显著上调的基因。**
+**Key finding: FGFR2 is the ONLY FGF family gene significantly upregulated in Activated cells.**
 
-**Top 10 Activated 上调基因** (作为对比)：
+**Top 10 Activated-upregulated genes** (for comparison):
 1. Col5a2, 2. Fn1, 3. Cthrc1, 4. Postn, 5. Lox, 6. Csrp2, 7. Ptn, 8. Col5a1, 9. Tagln, 10. Acta2
 
-这些都是典型的 EMT/纤维化相关基因，与 FGFR2 的激活态表达模式一致。
+These are all typical EMT/fibrosis-related genes, consistent with FGFR2's activated-state expression pattern.
 
 ---
 
@@ -104,7 +104,7 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 | Fgfr3 | 0.056       | 0.058   | +0.05  | 1.2e-03 |
 
 ![FGF Expression by Condition](results/mouse/quaife_ryan_fgf_by_condition.png)
-*图2：FGF家族表达。左上：细胞状态比例；右上：FGFR2按状态和条件分布；左下：FGF10按状态和条件分布；右下：FGF10 vs FGFR2 散点图（蓝=静息，红=激活）。*
+*Figure 2: FGF family expression. Top-left: Cell state proportions by condition; Top-right: FGFR2 by state and condition; Bottom-left: FGF10 by state and condition; Bottom-right: FGF10 vs FGFR2 scatter plot (blue=quiescent, red=activated).*
 
 ---
 
@@ -118,14 +118,14 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 | Activated | MI | 0.0130 | 0.2616 |
 
 ![FGF Violin Plots](results/mouse/quaife_ryan_fgf_violin.png)
-*图3：FGF家族表达小提琴图。蓝色=静息态，橙色=激活态。FGFR2在激活态中明显上调。*
+*Figure 3: FGF family expression violin plots. Blue=quiescent, orange=activated. FGFR2 is clearly upregulated in activated cells.*
 
 ---
 
 #### UMAP Overview
 
 ![UMAP Overview](results/mouse/quaife_ryan_umap_overview.png)
-*图4：UMAP可视化。上排：细胞状态、激活概率、疾病条件；下排：Fgf10、Fgfr2、Wt1表达。注意 Fgfr2 与激活态/MI条件的共定位。*
+*Figure 4: UMAP visualization. Top row: Cell state, activation probability, disease condition; Bottom row: Fgf10, Fgfr2, Wt1 expression. Note the co-localization of Fgfr2 with activated state/MI condition.*
 
 ---
 
@@ -135,7 +135,7 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
    - log2FC = +2.37 in MI vs Normal (p < 1e-242)
    - log2FC = +1.48 in Activated vs Quiescent cells (p = 3.7e-33)
    - Highest expression in MI + Activated cells (0.262)
-   - **是 FGF 家族中唯一在激活态上调的基因**
+   - **The only FGF family gene upregulated in activated state**
 
 2. **FGF10 is associated with quiescence**
    - log2FC = -1.50 in MI vs Normal (p < 1e-80)
@@ -158,9 +158,9 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 
 ### Why Not Analyzed Yet?
 
-1. **需要从混合细胞中筛选心外膜细胞**：数据包含心脏所有细胞类型，需要基于 Wt1+/ZsGreen+ 识别心外膜谱系
-2. **Quaife-Ryan 已提供充分证据**：FGFR2 的激活态特异性表达已得到验证
-3. **时间优先级**：如需时间序列分析（如 FGFR2 激活的动态变化），可后续分析
+1. **Requires filtering epicardial cells from mixed population**: Data contains all cardiac cell types, requiring identification based on Wt1+/ZsGreen+
+2. **Quaife-Ryan already provides sufficient evidence**: FGFR2's activated-state specific expression has been validated
+3. **Time priority**: Can be analyzed later if time-course analysis is needed (e.g., dynamics of FGFR2 activation)
 
 ### Download Status
 
@@ -174,7 +174,7 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 ## Dataset 3: Farbehi et al. (GSE130699)
 
 **Data**: GEO GSE130699
-**Why Not Used**: 同样是全心脏细胞数据，需要筛选心外膜细胞。Quaife-Ryan 数据已足够回答 FGF10/FGFR2 的问题。
+**Why Not Used**: Also whole-heart cell data requiring epicardial cell filtering. Quaife-Ryan data is sufficient to answer the FGF10/FGFR2 question.
 
 ---
 
@@ -183,7 +183,7 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 | Gene | Quaife-Ryan (Quiescent) | Quaife-Ryan (Activated) | log2FC | p_adj | Notes |
 |------|-------------------------|-------------------------|--------|-------|-------|
 | Fgf10 | 0.074 | 0.014 | -1.83 | 1.8e-03 | Higher in quiescent |
-| **Fgfr2** | 0.086 | 0.259 | **+1.48** | **3.7e-33** | **唯一在激活态上调** |
+| **Fgfr2** | 0.086 | 0.259 | **+1.48** | **3.7e-33** | **Only one upregulated in activated** |
 | Fgfr1 | 3.025 | 3.639 | +0.27 | 1.1e-19 | Broadly expressed |
 | Fgf7 | 0.385 | 0.499 | +0.37 | 1.5e-21 | Slight increase |
 
@@ -205,7 +205,7 @@ Using signature-based scoring (quiescent: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, 
 1. **FGFR2 is a robust marker of epicardial activation**
    - 6x higher in MI vs Normal (log2FC = 2.37)
    - 2.8x higher in activated vs quiescent cells (log2FC = 1.48)
-   - **是 FGF 家族中唯一在激活态显著上调的成员**
+   - **The only FGF family member significantly upregulated in activated state**
 
 2. **FGF10 inversely correlates with activation**
    - 3x lower in MI vs Normal (log2FC = -1.50)
