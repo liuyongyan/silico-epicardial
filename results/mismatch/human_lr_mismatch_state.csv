@@ -1,0 +1,4 @@
+rank,receptor,ligand,r_logfc,l_logfc,l_padj,n_db,db_weight,starvation,n_sig_down_hc,n_hc_ligands,composite
+1,APLP2,HLA-A,0.5589,-0.5016,0.0008359913918648,4,0.8,1.0,1,1,0.0022
+2,EPHB6,AFDN,0.4466,-0.439,1.340369778535819e-15,4,0.8,0.2,1,5,0.0003
+3,INSR,NAMPT,0.2637,-1.0408,1.4706484086240346e-13,3,0.6,0.143,1,7,0.0002

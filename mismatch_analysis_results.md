@@ -195,16 +195,127 @@ Our unbiased analysis confirms:
 
 ---
 
+## Human Data Analysis (PERIHEART)
+
+### Data Source
+
+- **Dataset**: Linna-Kuosmanen et al. 2024 (Cell Reports Medicine), PERIHEART
+- **DEG comparison**: Quiescent vs Activated epicardial cells (Wilcoxon rank-sum, 35,477 genes)
+- **Limitation**: All MI cells from single patient (PH-M57)
+
+### Key Observation: Weak Mismatch Signal
+
+The human data shows much weaker "primed but starved" patterns compared to mouse:
+
+| Gene | Mouse logFC | Mouse padj | Human logFC | Human padj | Pattern Conserved? |
+|------|:----------:|:----------:|:-----------:|:----------:|:------------------:|
+| FGFR2 (receptor) | +4.81 | 3.7e-33 | +0.39 | 1.2e-02 | Direction ✓, weak |
+| FGF10 (ligand) | -5.09 | 1.8e-03 | -1.50 | **1.00** | Direction ✓, **not significant** |
+| BMPR2 (receptor) | +15.12 | 0 | +0.03 | 1.00 | Almost no change |
+| BMP4 (ligand) | -73.53 | 0 | **+0.76** | 4.2e-03 | **Reversed** |
+| ACVR1 (receptor) | +21.96 | 0 | +0.10 | 1.00 | Almost no change |
+| BMP6 (ligand) | -20.73 | 3.4e-20 | -0.46 | 1.00 | Direction ✓, not significant |
+
+With strict significance filters (receptor padj<0.05 AND ligand padj<0.05), the human data yields only **3 mismatch pairs** — none from the FGF/BMP/Wnt pathways.
+
+### Why So Few Human Mismatch Pairs?
+
+1. **Single MI patient**: All 6,439 MI cells from PH-M57 vs 12,973 Normal cells from 29 donors. Patient-specific effects dominate.
+2. **Small effect sizes**: Human logFC values are 10-100× smaller than mouse (e.g., FGFR2: 0.39 vs 4.81).
+3. **Different biology**: BMP4 is **upregulated** in human MI (opposite of mouse), suggesting species-specific pathway responses.
+
+---
+
+## Cross-Species Comparison
+
+### Method
+
+For each high-confidence L-R pair (n_db ≥ 3, 1,953 pairs), check the "receptor↑ + ligand↓" pattern in both species:
+
+- **Strict**: Both receptor and ligand are significant (padj < 0.05)
+- **Relaxed**: Both show correct direction (receptor > 0, ligand < 0), regardless of significance
+- **Trend**: Direction correct in both species, but significant in only one
+
+### Conservation Summary
+
+| Category | Count | Description |
+|----------|:-----:|-------------|
+| CONSERVED_strict | 2 | Significant in both species |
+| CONSERVED_relaxed | 98 | Correct direction in both, significant in at least one |
+| CONSERVED_trend | 0 | Mouse significant, human shows trend |
+| Mouse only | 231 | Pattern only in mouse |
+| Human only | 376 | Pattern only in human |
+| Neither | 1,246 | No mismatch pattern |
+
+### Strictly Conserved Pairs (2 pairs)
+
+| Receptor | Ligand | n_db | Mouse R logFC | Mouse L logFC | Human R logFC | Human L logFC |
+|----------|--------|:----:|:------------:|:------------:|:------------:|:------------:|
+| EPHB6 | AFDN | 4 | +6.09 | -6.35 | +0.47 | -0.44 |
+| INSR | NAMPT | 3 | +0.60 | -13.27 | +0.29 | -1.04 |
+
+### Key Instruction 3 Pairs — Conservation Status
+
+| Pair | n_db | Mouse Pattern | Human Pattern | Conservation |
+|------|:----:|:---:|:---:|:---|
+| **FGFR2/FGF10** | **5** | **R↑ L↓ (sig)** | **R↑ L↓ (trend)** | **CONSERVED_relaxed** |
+| FGFR2/FGF7 | 5 | R↑ L↓ (sig) | R↑ L↓ (trend) | CONSERVED_relaxed |
+| FGFR2/FGF1 | 5 | R↑ L↓ (sig) | R↑ L**↑** | mouse_only |
+| ACVR1/BMP6 | 4 | R↑ L↓ (sig) | R↑ L↓ (trend) | CONSERVED_relaxed |
+| BMPR2/BMP6 | 4 | R↑ L↓ (sig) | R↑ L↓ (trend) | CONSERVED_relaxed |
+| BMPR2/BMP4 | 4 | R↑ L↓ (sig) | R↑ L**↑** | mouse_only |
+| BMPR1A/BMP4 | 4 | R↑ L↓ (sig) | R**↓** L**↑** | mouse_only |
+
+### Notable Conserved Pairs (relaxed, n_db ≥ 4)
+
+| Receptor | Ligand | n_db | Mouse R | Mouse L | Human R | Human L | Pathway |
+|----------|--------|:----:|:------:|:------:|:------:|:------:|---------|
+| FGFR2 | FGF10 | 5 | +4.81 | -5.09 | +0.39 | -1.50 | FGF |
+| FGFR2 | FGF7 | 5 | +4.81 | -4.87 | +0.39 | -0.02 | FGF |
+| EDNRA | EDN3 | 5 | +10.08 | -2.53 | +0.05 | -18.92 | Endothelin |
+| EPHA7 | EFNA2 | 5 | +31.96 | -1.90 | +0.40 | -19.18 | Ephrin |
+| EPHA3 | EFNA2 | 5 | +5.34 | -1.90 | +0.22 | -19.18 | Ephrin |
+| EPHB6 | EFNB2 | 5 | +6.09 | -1.20 | +0.47 | -0.36 | Ephrin |
+| LRP5 | DKK1 | 5 | +1.94 | -0.04 | +0.47 | -1.63 | Wnt |
+| TRHR | TRH | 5 | +20.33 | -1.23 | +0.65 | -16.78 | Neuropeptide |
+| ACVR1 | BMP6 | 4 | +21.96 | -20.73 | +0.10 | -0.46 | BMP/Activin |
+| BMPR2 | BMP6 | 4 | +15.12 | -20.73 | +0.03 | -0.46 | BMP |
+| NOTCH1 | MFNG | 4 | +4.40 | -5.04 | +0.80 | -0.78 | Notch |
+| NOTCH3 | PSEN1 | 4 | +5.47 | -10.10 | +0.91 | -0.05 | Notch |
+| IL2RG | IL2 | 4 | +0.68 | -3.44 | +0.42 | -18.18 | Interleukin |
+
+---
+
+## Conclusions
+
+1. **FGF10/FGFR2 is cross-species conserved** (relaxed criteria). In both mouse and human, FGFR2 is upregulated and FGF10 is downregulated in activated/MI epicardial cells. The human signal is weaker and not statistically significant, likely due to single-patient MI data.
+
+2. **BMP pathway is partially conserved**. BMP6/BMPR2 and BMP6/ACVR1 show the mismatch pattern in both species. However, **BMP4 is reversed in human** (upregulated), making BMP4/BMPR2 mouse-specific.
+
+3. **Ephrin pathway emerges as a new conserved candidate**. EPHA3/EFNA2, EPHA7/EFNA2, and EPHB6/EFNB2 are all conserved. Ephrin signaling is known to regulate EMT and cell migration — relevant to epicardial activation.
+
+4. **Only 2 pairs are strictly conserved** (significant in both species): EPHB6/AFDN and INSR/NAMPT. This highlights the **limited power of the human dataset** (single MI patient).
+
+5. **98 pairs are conserved at relaxed level**. These are candidates for validation if better human MI data becomes available (multi-patient cohorts).
+
+---
+
 ## Output Files
 
 | File | Description |
 |------|-------------|
-| `results/mismatch/mouse_lr_mismatch_all.csv` | All 701 mismatch pairs (raw score) |
-| `results/mismatch/mouse_lr_mismatch_top50.csv` | Top 50 by raw score |
-| `results/mismatch/mouse_lr_mismatch_refined.csv` | 127 pairs with composite scoring |
-| `results/mismatch/curated_lr_pairs_mouse.csv` | 5,669 L-R pairs used (mouse) |
-| `scripts/05_mismatch/01_mouse_lr_mismatch.py` | Raw mismatch analysis |
-| `scripts/05_mismatch/02_mouse_lr_mismatch_refined.py` | Refined multi-dimensional scoring |
+| `results/mismatch/mouse_lr_mismatch_all.csv` | All 701 mouse mismatch pairs (raw score) |
+| `results/mismatch/mouse_lr_mismatch_top50.csv` | Top 50 mouse pairs by raw score |
+| `results/mismatch/mouse_lr_mismatch_refined.csv` | 127 mouse pairs with composite scoring |
+| `results/mismatch/human_lr_mismatch_state.csv` | Human mismatch (quiescent vs activated, 3 pairs) |
+| `results/mismatch/human_lr_mismatch_condition.csv` | Human mismatch (normal vs MI, 4 pairs) |
+| `results/mismatch/cross_species_lr_mismatch.csv` | All 1,953 L-R pairs with both species data |
+| `results/mismatch/cross_species_conserved.csv` | 100 conserved mismatch pairs |
+| `results/mismatch/curated_lr_pairs_mouse.csv` | 5,669 L-R pairs (mouse gene symbols) |
+| `scripts/05_mismatch/01_mouse_lr_mismatch.py` | Mouse raw mismatch analysis |
+| `scripts/05_mismatch/02_mouse_lr_mismatch_refined.py` | Mouse refined multi-dimensional scoring |
+| `scripts/05_mismatch/03_human_lr_mismatch_refined.py` | Human mismatch analysis |
+| `scripts/05_mismatch/04_cross_species_comparison.py` | Cross-species comparison |
 
 ---
 
