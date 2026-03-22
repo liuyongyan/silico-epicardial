@@ -140,6 +140,38 @@ Only 2 pairs reach strict significance in both species (EPHB6/AFDN, INSR/NAMPT �
 
 ---
 
+## Geneformer In Silico Perturbation: Skipped
+
+Instruction 3 Phase 4 proposed using Geneformer fine-tuned classifier to measure each receptor's contribution to epicardial activation via in silico deletion. This step was skipped for two reasons:
+
+### Reason 1: Systematic bias against low-expression genes
+
+Geneformer tokenizes each cell as a rank-ordered sequence of its top ~2,048 expressed genes (out of ~20,000). FGF family genes have very low expression:
+
+| Gene | Cells Expressing | Mean Expression (log1p) | Tokenized? |
+|------|:----------------:|:-----------------------:|:----------:|
+| FGFR2 | 1.7% (321/19,412) | 0.24–0.36 | Rarely |
+| FGFR1 | 28–40% | 0.44–0.61 | Sometimes |
+| Col1a1 (EMT marker) | >50% | >1.0 | Almost always |
+
+In silico perturbation = deleting a gene's token from the sequence. If FGFR2 is not tokenized in 98.3% of cells, deleting it changes nothing. Round 1 results (embedding perturbation on human data) confirmed this:
+
+- FGFR2 perturbation effect: **rank 61/84** (bottom 27%)
+- Correlation between n_cells_with_gene and perturbation effect: **r = 0.649**
+- Top-ranked genes (PLXDC2, ALK, AQP1) are all expressed in more cells, not necessarily more biologically important
+
+This bias is inherent to Geneformer's rank-value tokenization and would persist in Round 2 (classifier perturbation).
+
+### Reason 2: Classification label quality
+
+The quiescent vs activated labels used for fine-tuning are derived from our own signature-based scoring with GMM thresholding. Cross-validation between condition-based and score-based classification shows only **60.8% agreement** in human data. A classifier trained on noisy labels will produce noisy perturbation results — the model would likely learn patient-specific differences (single MI patient PH-M57 vs 29 normal donors) rather than true activation biology.
+
+### Impact on downstream analysis
+
+Geneformer perturbation was allocated 25% weight in instruction 3's Phase 6 priority scoring. Without it, we redistribute to the other three dimensions (mismatch 30%, conservation 30%, druggability 20%, literature 20%). This means the final ranking relies more on expression-level evidence and prior knowledge, without the non-linear gene regulatory insights Geneformer could provide. This is a known limitation of our current analysis.
+
+---
+
 ## Output Files
 
 | File | Description |
