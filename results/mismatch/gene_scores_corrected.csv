@@ -1,0 +1,191 @@
+gene,druggability_auto,literature_auto,pubmed_count,dgidb_interactions,dgidb_approved,deliver_category,deliver_score,uniprot_locations
+ICAM1,0.573,1.0,3053.0,6.0,2.0,membrane,0.5,Cell membrane
+PVR,0.0,1.0,3360.0,0.0,0.0,secreted,1.0,Cell membrane | Cell membrane | Secreted | Secreted
+IL18,0.666,1.0,1654.0,19.0,7.0,secreted,1.0,"Cytoplasm, cytosol | Secreted"
+IL2,0.77,1.0,1800.0,64.0,33.0,secreted,1.0,Secreted
+IL4,0.559,1.0,1623.0,5.0,1.0,secreted,1.0,Secreted
+FAS,0.962,1.0,1975.0,58.0,18.0,secreted,1.0,Cell membrane | Membrane raft | Secreted | Secreted | Secreted | Secreted | Secreted
+MARCO,0.0,1.0,4133.0,0.0,0.0,membrane,0.5,Cell membrane
+EGFR,0.8,1.0,8804.0,192.0,60.0,secreted,1.0,Cell membrane | Endoplasmic reticulum membrane | Golgi apparatus membrane | Nucleus membrane | Endosome | Endosome membrane | Nucleus | Secreted
+NODAL,0.261,1.0,9116.0,1.0,0.0,secreted,1.0,Secreted
+CD14,0.62,1.0,1498.0,11.0,3.0,secreted,1.0,Cell membrane | Secreted | Membrane raft | Golgi apparatus
+FGF2,0.72,0.959,1111.0,36.0,19.0,secreted,1.0,Secreted | Nucleus
+LPL,0.699,0.948,1021.0,28.0,18.0,secreted,1.0,"Cell membrane | Secreted | Secreted, extracellular space, extracellular matrix"
+TGFB1,0.763,0.927,876.0,59.0,33.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix | Secreted"
+ERBB2,0.8,0.925,866.0,153.0,64.0,membrane,0.5,"Cell membrane | Cell projection, ruffle membrane | Cell membrane | Early endosome | Cytoplasm, perinuclear region | Nucleus | Cytoplasm | Nucleus | Cytoplasm | Nucleus"
+NPY,0.62,0.919,828.0,11.0,4.0,secreted,1.0,"Secreted | Cytoplasmic vesicle, secretory vesicle, neuronal dense core vesicle"
+NOTCH1,0.595,0.904,742.0,8.0,2.0,membrane,0.5,Cell membrane | Late endosome membrane | Nucleus
+CD44,0.666,0.877,610.0,19.0,7.0,secreted,1.0,"Cell membrane | Cell projection, microvillus | Secreted"
+PGF,0.523,0.868,571.0,3.0,1.0,secreted,1.0,Secreted
+BMP2,0.543,0.867,566.0,4.0,1.0,secreted,1.0,Secreted
+BMP4,0.0,0.86,538.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix"
+FAP,0.634,0.86,536.0,13.0,1.0,secreted,1.0,"Cell surface | Cell membrane | Cell projection, lamellipodium membrane | Cell projection, invadopodium membrane | Cell projection, ruffle membrane | Membrane | Secreted | Cytoplasm"
+BMPR2,0.773,0.841,468.0,6.0,3.0,membrane,0.5,Cell membrane
+PF4,0.0,0.82,401.0,0.0,0.0,secreted,1.0,Secreted
+TRH,0.559,0.809,371.0,5.0,3.0,secreted,1.0,Secreted
+TGFBR1,0.384,0.779,297.0,7.0,0.0,membrane,0.5,"Cell membrane | Cell junction, tight junction | Cell surface | Membrane raft"
+HRAS,0.793,0.757,252.0,83.0,35.0,membrane,0.5,"Cell membrane | Golgi apparatus | Golgi apparatus membrane | Nucleus | Cytoplasm | Cytoplasm, perinuclear region"
+IGF2,0.661,0.754,248.0,18.0,10.0,secreted,1.0,Secreted
+IL15,0.64,0.748,236.0,14.0,5.0,secreted,1.0,Secreted | Cytoplasm | Nucleus
+FGF1,0.804,0.744,229.0,9.0,2.0,secreted,1.0,"Secreted | Cytoplasm | Cytoplasm, cell cortex | Cytoplasm, cytosol | Nucleus"
+AMH,0.856,0.733,212.0,17.0,5.0,secreted,1.0,Secreted
+OSM,0.297,0.724,199.0,2.0,0.0,secreted,1.0,Secreted
+NOTCH3,0.559,0.701,167.0,5.0,1.0,membrane,0.5,Cell membrane | Nucleus
+MMP12,0.604,0.699,165.0,9.0,4.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix"
+IL1RN,0.543,0.694,159.0,4.0,4.0,secreted,1.0,Secreted | Cytoplasm | Cytoplasm | Cytoplasm
+NAMPT,0.559,0.685,149.0,5.0,1.0,secreted,1.0,Nucleus | Cytoplasm | Secreted
+FGFR2,0.997,0.675,138.0,87.0,27.0,secreted,1.0,Cell membrane | Golgi apparatus | Cytoplasmic vesicle | Cell membrane | Cell membrane | Secreted | Secreted
+DKK1,0.604,0.673,136.0,9.0,5.0,secreted,1.0,Secreted
+ANGPT1,0.87,0.673,136.0,20.0,3.0,secreted,1.0,Secreted
+TNFRSF11B,0.584,0.661,125.0,7.0,5.0,secreted,1.0,Secreted
+BMP7,0.613,0.657,121.0,10.0,10.0,secreted,1.0,Secreted
+PLAUR,0.595,0.656,120.0,8.0,3.0,secreted,1.0,"Cell membrane | Cell projection, invadopodium membrane | Cell membrane | Secreted"
+IL6ST,0.523,0.651,116.0,3.0,3.0,secreted,1.0,Cell membrane | Secreted
+ITGB3,0.646,0.646,112.0,15.0,5.0,membrane,0.5,"Cell membrane | Cell projection, lamellipodium membrane | Cell junction, focal adhesion | Postsynaptic cell membrane | Synapse"
+CNTF,0.461,0.639,106.0,1.0,1.0,intracellular,0.1,Cytoplasm
+FGF10,0.0,0.627,97.0,0.0,0.0,secreted,1.0,Secreted
+IL1R1,0.634,0.626,96.0,13.0,7.0,secreted,1.0,Membrane | Cell membrane | Secreted
+SDC1,0.497,0.623,94.0,2.0,1.0,secreted,1.0,"Membrane | Secreted | Secreted, extracellular exosome"
+BTC,0.795,0.618,91.0,8.0,3.0,secreted,1.0,"Secreted, extracellular space | Cell membrane"
+INSR,0.979,0.617,90.0,71.0,42.0,membrane,0.5,Cell membrane | Late endosome | Lysosome
+IGF2R,0.497,0.615,89.0,2.0,1.0,membrane,0.5,Golgi apparatus membrane | Endosome membrane
+BMPR1A,0.697,0.615,89.0,2.0,2.0,membrane,0.5,Cell membrane | Cell surface
+LRP6,0.0,0.614,88.0,0.0,0.0,membrane,0.5,Cell membrane | Endoplasmic reticulum | Membrane raft
+AHSG,0.0,0.611,86.0,0.0,0.0,secreted,1.0,Secreted
+DYSF,0.0,0.603,81.0,0.0,0.0,membrane,0.5,"Cell membrane, sarcolemma | Cytoplasmic vesicle membrane | Cell membrane | Late endosome membrane"
+TNFSF10,0.323,0.601,80.0,3.0,0.0,secreted,1.0,Cell membrane | Secreted
+MERTK,0.359,0.599,79.0,5.0,0.0,membrane,0.5,Cell membrane
+IL16,0.0,0.599,79.0,0.0,0.0,secreted,1.0,Secreted | Cytoplasm | Cytoplasm | Nucleus
+ANXA1,0.938,0.596,77.0,44.0,23.0,secreted,1.0,"Nucleus | Cytoplasm | Cell projection, cilium | Cell membrane | Membrane | Endosome membrane | Basolateral cell membrane | Apical cell membrane | Lateral cell membrane | Secreted | Secreted, extracellular space | Cell membrane | Secreted, extracellular exosome | Cytoplasmic vesicle, secretory vesicle lumen | Cell projection, phagocytic cup | Early endosome | Cytoplasmic vesicle membrane"
+CCN1,0.323,0.596,77.0,3.0,0.0,secreted,1.0,Secreted
+LAMA2,0.461,0.589,73.0,1.0,1.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix, basement membrane"
+PENK,0.0,0.589,73.0,0.0,0.0,secreted,1.0,"Cytoplasmic vesicle, secretory vesicle, chromaffin granule lumen | Secreted"
+GDF2,0.72,0.587,72.0,36.0,6.0,secreted,1.0,Secreted
+RYK,0.0,0.587,72.0,0.0,0.0,membrane,0.5,Membrane | Nucleus | Cytoplasm
+CDH1,0.543,0.583,70.0,4.0,1.0,membrane,0.5,"Cell junction, adherens junction | Cell membrane | Endosome | Golgi apparatus, trans-Golgi network | Cytoplasm | Cell junction, desmosome"
+ITGB1,0.627,0.583,70.0,12.0,2.0,membrane,0.5,"Cell membrane | Cell projection, invadopodium membrane | Cell projection, ruffle membrane | Recycling endosome | Melanosome | Cleavage furrow | Cell projection, lamellipodium | Cell junction, focal adhesion | Cell membrane, sarcolemma | Cell junction"
+WNT3,0.0,0.581,69.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix | Secreted"
+OXT,0.497,0.579,68.0,2.0,2.0,secreted,1.0,Secreted
+GAS6,0.523,0.569,63.0,3.0,2.0,secreted,1.0,Secreted
+IL1R2,0.497,0.569,63.0,2.0,1.0,secreted,1.0,Secreted | Cell membrane
+BMP6,0.0,0.56,59.0,0.0,0.0,secreted,1.0,Secreted
+TSHR,1.0,0.558,58.0,94.0,22.0,membrane,0.5,Cell membrane | Basolateral cell membrane
+LRP5,0.1,0.558,58.0,0.0,0.0,membrane,0.5,Membrane | Endoplasmic reticulum
+TNFSF12,0.297,0.543,52.0,2.0,0.0,secreted,1.0,Cell membrane | Secreted | Cell membrane
+NTN1,0.0,0.54,51.0,0.0,0.0,secreted,1.0,Secreted | Cytoplasm
+CCR6,0.323,0.538,50.0,3.0,0.0,membrane,0.5,Cell membrane
+EDNRA,0.682,0.538,50.0,23.0,8.0,membrane,0.5,Cell membrane
+AGRP,0.0,0.535,49.0,0.0,0.0,secreted,1.0,Secreted | Golgi apparatus lumen
+OXTR,0.861,0.529,47.0,18.0,9.0,membrane,0.5,Cell membrane
+IL12B,0.64,0.526,46.0,14.0,7.0,secreted,1.0,Secreted
+NOTCH4,0.573,0.524,45.0,6.0,2.0,membrane,0.5,Cell membrane | Nucleus
+IL2RG,0.813,0.524,45.0,10.0,4.0,membrane,0.5,Cell membrane | Cell surface
+ACVR1,0.882,0.524,45.0,23.0,4.0,membrane,0.5,Membrane
+TNFRSF12A,0.461,0.521,44.0,1.0,0.0,membrane,0.5,Membrane
+NID1,0.0,0.521,44.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix, basement membrane"
+NRP2,0.461,0.517,43.0,1.0,1.0,secreted,1.0,Secreted
+TGM2,0.727,0.514,42.0,39.0,22.0,secreted,1.0,"Cytoplasm, cytosol | Nucleus | Chromosome | Secreted, extracellular space, extracellular matrix | Cell membrane | Mitochondrion | Cytoplasm, perinuclear region"
+IL23R,0.523,0.511,41.0,3.0,3.0,membrane,0.5,Cell membrane
+ARF1,0.523,0.508,40.0,3.0,3.0,membrane,0.5,"Golgi apparatus membrane | Synapse, synaptosome | Postsynaptic density"
+VTN,0.0,0.504,39.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space | Parasitophorous vacuole"
+ADORA2B,0.861,0.504,39.0,18.0,9.0,membrane,0.5,Cell membrane
+PSEN1,0.634,0.501,38.0,13.0,1.0,membrane,0.5,"Endoplasmic reticulum | Endoplasmic reticulum membrane | Golgi apparatus membrane | Cytoplasmic granule | Cell membrane | Cell projection, growth cone | Early endosome | Early endosome membrane | Cell projection, neuron projection | Cell projection, axon | Synapse"
+ROR2,0.0,0.494,36.0,0.0,0.0,membrane,0.5,Cell membrane
+COL4A3,0.497,0.494,36.0,2.0,2.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix, basement membrane"
+EFNB2,0.757,0.486,34.0,55.0,5.0,membrane,0.5,"Cell membrane | Cell junction, adherens junction"
+LTBP1,0.0,0.486,34.0,0.0,0.0,secreted,1.0,"Secreted | Secreted, extracellular space, extracellular matrix"
+PLAU,0.734,0.482,33.0,42.0,21.0,secreted,1.0,Secreted
+IL12A,0.613,0.478,32.0,10.0,3.0,secreted,1.0,Secreted
+SEMA3C,0.461,0.478,32.0,1.0,1.0,secreted,1.0,Secreted
+FGF5,0.0,0.478,32.0,0.0,0.0,secreted,1.0,Secreted
+FGF16,0.0,0.474,31.0,0.0,0.0,secreted,1.0,Secreted
+FGF7,0.297,0.465,29.0,2.0,0.0,secreted,1.0,Secreted
+ITGA5,0.595,0.46,28.0,8.0,1.0,membrane,0.5,"Cell membrane | Cell junction, focal adhesion"
+MYOC,0.0,0.451,26.0,0.0,0.0,secreted,1.0,"Secreted | Golgi apparatus | Cytoplasmic vesicle | Secreted, extracellular space | Secreted, extracellular space, extracellular matrix | Secreted, extracellular exosome | Mitochondrion | Mitochondrion intermembrane space | Mitochondrion inner membrane | Mitochondrion outer membrane | Rough endoplasmic reticulum | Cell projection | Cell projection, cilium | Secreted | Endoplasmic reticulum"
+OSMR,0.261,0.44,24.0,1.0,0.0,membrane,0.5,Membrane
+EFNA1,0.62,0.435,23.0,11.0,2.0,secreted,1.0,Cell membrane | Secreted
+ADAM15,0.0,0.429,22.0,0.0,0.0,membrane,0.5,"Endomembrane system | Cell junction, adherens junction | Cell projection, cilium, flagellum | Cytoplasmic vesicle, secretory vesicle, acrosome"
+DLL3,0.297,0.429,22.0,2.0,0.0,membrane,0.5,Membrane
+SLIT3,0.0,0.429,22.0,0.0,0.0,secreted,1.0,Secreted
+LRP8,0.0,0.423,21.0,0.0,0.0,secreted,1.0,Cell membrane | Secreted
+ITGAV,0.634,0.423,21.0,13.0,3.0,membrane,0.5,"Cell membrane | Cell junction, focal adhesion"
+EBI3,0.0,0.423,21.0,0.0,0.0,secreted,1.0,Secreted
+ACVR1B,0.0,0.423,21.0,0.0,0.0,membrane,0.5,Cell membrane
+TYRO3,0.661,0.423,21.0,18.0,1.0,membrane,0.5,Cell membrane
+IL23A,0.595,0.416,20.0,8.0,5.0,secreted,1.0,Secreted
+NPFF,0.0,0.416,20.0,0.0,0.0,secreted,1.0,Secreted
+TGFA,0.543,0.416,20.0,4.0,2.0,secreted,1.0,"Secreted, extracellular space | Cell membrane"
+ROBO2,0.0,0.403,18.0,0.0,0.0,membrane,0.5,Membrane
+MADCAM1,0.323,0.403,18.0,3.0,0.0,membrane,0.5,Membrane
+UNC5B,0.1,0.403,18.0,0.0,0.0,membrane,0.5,Cell membrane | Membrane raft
+BMPR1B,0.697,0.403,18.0,2.0,2.0,membrane,0.5,Cell membrane
+EFEMP1,0.0,0.403,18.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix"
+GDF5,0.0,0.395,17.0,0.0,0.0,secreted,1.0,Secreted | Cell membrane
+RSPO3,0.261,0.395,17.0,1.0,0.0,secreted,1.0,Secreted
+LGR6,0.595,0.387,16.0,8.0,0.0,membrane,0.5,Cell membrane
+SEMA3F,0.0,0.361,13.0,0.0,0.0,secreted,1.0,Secreted
+PLXNA2,0.1,0.361,13.0,0.0,0.0,membrane,0.5,Cell membrane
+EPHB3,0.762,0.361,13.0,58.0,12.0,membrane,0.5,"Cell membrane | Cell projection, dendrite"
+DEFB1,0.0,0.351,12.0,0.0,0.0,secreted,1.0,Secreted | Membrane
+IL1RL2,0.523,0.351,12.0,3.0,1.0,membrane,0.5,Membrane
+EPHB2,0.787,0.351,12.0,78.0,11.0,membrane,0.5,"Cell membrane | Cell projection, axon | Cell projection, dendrite"
+FZD1,0.543,0.351,12.0,4.0,1.0,membrane,0.5,Cell membrane
+EDN3,0.461,0.34,11.0,1.0,1.0,secreted,1.0,Secreted
+FGFRL1,0.261,0.34,11.0,1.0,0.0,membrane,0.5,Membrane
+ITGB8,0.261,0.34,11.0,1.0,0.0,membrane,0.5,Cell membrane
+SORBS1,0.1,0.34,11.0,0.0,0.0,membrane,0.5,"Cell junction, adherens junction | Cell membrane | Cytoplasm, cytoskeleton | Cell junction, focal adhesion | Nucleus | Nucleus matrix"
+FZD8,0.297,0.34,11.0,2.0,0.0,membrane,0.5,Membrane | Golgi apparatus | Cell membrane
+RSPO2,0.0,0.328,10.0,0.0,0.0,secreted,1.0,Secreted
+LAMB1,0.497,0.328,10.0,2.0,1.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix, basement membrane"
+NECTIN2,0.0,0.328,10.0,0.0,0.0,membrane,0.5,Cell membrane
+IL13RA1,0.297,0.328,10.0,2.0,0.0,membrane,0.5,Membrane
+ITGA9,0.297,0.328,10.0,2.0,0.0,membrane,0.5,Membrane
+ACVR2A,0.723,0.315,9.0,3.0,2.0,membrane,0.5,Cell membrane
+TNFSF13,0.297,0.315,9.0,2.0,0.0,secreted,1.0,Secreted
+KCND1,0.573,0.315,9.0,6.0,4.0,membrane,0.5,Cell membrane
+ITGB5,0.343,0.315,9.0,4.0,0.0,membrane,0.5,Cell membrane
+PLXNB2,0.0,0.315,9.0,0.0,0.0,membrane,0.5,Cell membrane
+EPHA3,0.613,0.3,8.0,10.0,1.0,secreted,1.0,Cell membrane | Secreted
+LAMC2,0.461,0.3,8.0,1.0,1.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix, basement membrane"
+IL12RB1,0.497,0.3,8.0,2.0,1.0,membrane,0.5,Membrane
+FGF6,0.461,0.3,8.0,1.0,1.0,secreted,1.0,"Secreted, extracellular space"
+SEMA6A,0.461,0.3,8.0,1.0,1.0,membrane,0.5,Cell membrane
+RGMA,0.297,0.284,7.0,2.0,0.0,membrane,0.5,Cell membrane
+NEO1,0.0,0.284,7.0,0.0,0.0,membrane,0.5,Cell membrane
+NRTN,0.0,0.284,7.0,0.0,0.0,secreted,1.0,Secreted
+EPHA1,0.497,0.284,7.0,2.0,1.0,membrane,0.5,Cell membrane
+LRPAP1,0.0,0.284,7.0,0.0,0.0,other,0.3,"Rough endoplasmic reticulum lumen | Endoplasmic reticulum-Golgi intermediate compartment lumen | Golgi apparatus, cis-Golgi network | Golgi apparatus lumen | Endosome lumen | Cell surface"
+TRHR,0.773,0.284,7.0,6.0,1.0,membrane,0.5,Cell membrane
+JMJD6,0.0,0.284,7.0,0.0,0.0,intracellular,0.1,"Nucleus, nucleoplasm | Nucleus, nucleolus | Cytoplasm"
+PLXNA4,0.1,0.266,6.0,0.0,0.0,membrane,0.5,Cell membrane
+RSPO1,0.0,0.266,6.0,0.0,0.0,secreted,1.0,Secreted | Nucleus
+GFRA2,0.543,0.266,6.0,4.0,1.0,membrane,0.5,Cell membrane
+SDC3,0.0,0.266,6.0,0.0,0.0,membrane,0.5,Cell membrane
+SEMA4C,0.1,0.245,5.0,0.0,0.0,membrane,0.5,"Postsynaptic density membrane | Cytoplasmic vesicle, secretory vesicle, synaptic vesicle membrane"
+AFDN,0.0,0.245,5.0,0.0,0.0,other,0.3,"Cell junction, adherens junction"
+GRIN2D,0.895,0.245,5.0,27.0,9.0,membrane,0.5,Cell membrane | Postsynaptic cell membrane
+SCGB3A1,0.461,0.245,5.0,1.0,1.0,secreted,1.0,Secreted
+PTPRF,0.461,0.245,5.0,1.0,1.0,membrane,0.5,Membrane
+OGFR,0.261,0.245,5.0,1.0,0.0,intracellular,0.1,Cytoplasm | Nucleus
+FZD3,0.461,0.245,5.0,1.0,1.0,membrane,0.5,Membrane | Cell membrane | Cell surface | Apical cell membrane
+NECTIN4,0.523,0.245,5.0,3.0,2.0,secreted,1.0,"Cell membrane | Cell junction, adherens junction | Secreted"
+PTPRM,0.261,0.22,4.0,1.0,0.0,membrane,0.5,Cell membrane
+UNC5C,0.0,0.22,4.0,0.0,0.0,membrane,0.5,"Cell membrane | Cell surface | Synapse, synaptosome | Cell projection, axon | Cell projection, dendrite | Cell projection, growth cone | Cell projection, lamellipodium | Cell projection, filopodium"
+IL13RA2,0.543,0.22,4.0,4.0,1.0,membrane,0.5,Cell membrane
+EPHA7,0.678,0.22,4.0,22.0,2.0,membrane,0.5,Cell membrane
+MFNG,0.0,0.22,4.0,0.0,0.0,membrane,0.5,Golgi apparatus membrane
+EFNA2,0.702,0.19,3.0,29.0,5.0,membrane,0.5,Cell membrane
+EPHB6,0.461,0.19,3.0,1.0,1.0,secreted,1.0,Membrane | Secreted
+EDN2,0.0,0.19,3.0,0.0,0.0,secreted,1.0,Secreted
+IL1RAPL1,0.0,0.15,2.0,0.0,0.0,membrane,0.5,"Cell membrane | Cytoplasm | Cell projection, axon | Cell projection, dendrite"
+NTNG2,0.1,0.15,2.0,0.0,0.0,membrane,0.5,Cell membrane
+NECTIN3,0.0,0.15,2.0,0.0,0.0,membrane,0.5,"Cell membrane | Postsynaptic cell membrane | Cell junction, adherens junction"
+RGMB,0.1,0.15,2.0,0.0,0.0,membrane,0.5,Cell membrane | Membrane raft
+PTDSS1,0.0,0.15,2.0,0.0,0.0,membrane,0.5,Endoplasmic reticulum membrane
+ITGB3BP,0.0,0.095,1.0,0.0,0.0,intracellular,0.1,"Nucleus | Chromosome, centromere | Chromosome, centromere, kinetochore | Nucleus | Nucleus | Cytoplasm | Cytoplasm"
+NTN3,0.0,0.095,1.0,0.0,0.0,secreted,1.0,"Secreted, extracellular space, extracellular matrix"
+INHBB,0.0,0.095,1.0,0.0,0.0,secreted,1.0,Secreted
+LRRC4,0.0,0.0,0.0,0.0,0.0,membrane,0.5,Membrane | Postsynaptic cell membrane
+NPFFR1,0.651,0.0,0.0,16.0,0.0,membrane,0.5,Cell membrane
+SEMA4F,0.1,0.0,0.0,0.0,0.0,membrane,0.5,"Cell membrane | Postsynaptic density | Perikaryon | Cell projection, dendrite"
+GPHA2,0.0,0.0,0.0,0.0,0.0,secreted,1.0,Secreted
