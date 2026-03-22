@@ -1,0 +1,30 @@
+Signature-Based Classifier Report
+========================================
+Iteration 1:
+  Quiescent genes used: ['WT1', 'UPK3B', 'MSLN', 'KRT19', 'CDH1', 'CLDN1', 'CLDN3', 'TJP1', 'OCLN']
+  Activated genes used: ['SNAI1', 'SNAI2', 'TWIST1', 'VIM', 'FN1', 'COL1A1', 'COL3A1', 'POSTN', 'ACTA2']
+  Best model: LogisticRegression (F1=0.9188)
+  Predictions: {'activated': 10196, 'quiescent': 9216}
+  Validation passed: False
+  Self-correction: augmented
+Iteration 2:
+  Quiescent genes used: ['WT1', 'UPK3B', 'MSLN', 'KRT19', 'CDH1', 'CLDN1', 'CLDN3', 'TJP1', 'OCLN', 'ITLN1', 'C3', 'PRG4', 'TM4SF1', 'PLA2G2A']
+  Activated genes used: ['SNAI1', 'SNAI2', 'TWIST1', 'VIM', 'FN1', 'COL1A1', 'COL3A1', 'POSTN', 'ACTA2', 'MB', 'PTGDS', 'TNNI3', 'CRYAB', 'COX7A1']
+  Best model: LogisticRegression (F1=0.9990)
+  Predictions: {'activated': 9790, 'quiescent': 9622}
+  Validation passed: False
+  Self-correction: augmented
+Iteration 3:
+  Quiescent genes used: ['WT1', 'UPK3B', 'MSLN', 'KRT19', 'CDH1', 'CLDN1', 'CLDN3', 'TJP1', 'OCLN', 'ITLN1', 'C3', 'PRG4', 'TM4SF1', 'PLA2G2A', 'SLPI', 'TIMP1', 'AQP1', 'SERPING1', 'C1R']
+  Activated genes used: ['SNAI1', 'SNAI2', 'TWIST1', 'VIM', 'FN1', 'COL1A1', 'COL3A1', 'POSTN', 'ACTA2', 'MB', 'PTGDS', 'TNNI3', 'CRYAB', 'COX7A1', 'COX6A2', 'TPM1']
+  Best model: LogisticRegression (F1=0.9993)
+  Predictions: {'activated': 10476, 'quiescent': 8936}
+  Validation passed: False
+  Self-correction: gmm_fallback
+  Post-fallback validation: True
+
+Final method: gmm_fallback
+Final prediction distribution:
+  quiescent: 11,948
+  activated: 7,464
+Transitioning cells: 851

@@ -1,0 +1,895 @@
+================================================================================
+AI-DRIVEN DISCOVERY OF "PRIMED BUT STARVED" LIGAND-RECEPTOR PAIRS
+IN EPICARDIAL CELLS FOR CARDIAC REGENERATION
+================================================================================
+
+Computational Workflow for Mouse and Human EPDC Analysis
+Using Geneformer and Multi-Modal Integration
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. Overview and Hypothesis
+2. Datasets
+3. Phase 1: Data Preprocessing and Cell State Classification
+4. Phase 2: Differential Expression Analysis
+5. Phase 3: Ligand-Receptor Mismatch Identification
+6. Phase 4: Geneformer Fine-Tuning and In Silico Perturbation
+7. Phase 5: Cross-Species Validation
+8. Phase 6: Therapeutic Target Prioritization
+9. Expected Outputs
+10. Timeline and Resources
+
+================================================================================
+1. OVERVIEW AND HYPOTHESIS
+================================================================================
+
+HYPOTHESIS: "Primed But Starved" Model
+-------------------------------------------------------------------------------
+
+After MI, epicardial cells upregulate receptor machinery (PRIMED) but lack 
+cognate ligands (STARVED), creating therapeutic opportunities.
+
+    NORMAL EPICARDIUM              POST-MI EPICARDIUM
+    
+    Ligand: ●●●●●                  Ligand: ●● (depleted)
+           ↓                              ↓
+    Receptor: ▢▢▢                  Receptor: ▢▢▢▢▢▢▢ (upregulated)
+           ↓                              ↓
+    Signal: ████                   Signal: ██ (insufficient)
+           ↓                              ↓
+    State: Quiescent               State: Activated but incomplete
+
+THERAPEUTIC STRATEGY:
+Deliver depleted ligands to engage upregulated receptors → Enhanced activation
+
+
+VALIDATED EXAMPLE: FGF10/FGFR2
+-------------------------------------------------------------------------------
+
+| Species | FGFR2 (Receptor) | FGF10 (Ligand) | Pattern |
+|---------|------------------|----------------|---------|
+| Mouse   | log2FC = +2.37   | log2FC = -1.50 | Receptor↑ Ligand↓ |
+| Human   | log2FC = +0.57   | TBD            | Receptor↑ (moderate) |
+
+GOAL: Systematically identify ALL ligand-receptor pairs with this pattern
+
+
+================================================================================
+2. DATASETS
+================================================================================
+
+MOUSE DATA
+-------------------------------------------------------------------------------
+
+Dataset 1: Quaife-Ryan et al. 2021 (eLife) — PRIMARY
+  - Source: ArrayExpress E-MTAB-10035
+  - Cells: 112,676 epicardial stromal cells (EpiSC)
+  - Conditions: 85,514 MI cells, 27,162 Normal cells
+  - Timepoint: Day 5 post-MI
+  - Advantage: Dedicated epicardial isolation, no filtering needed
+  - Status: ANALYZED ✓
+
+Dataset 2: Forte et al. (GSE135310) — TIME COURSE (Optional)
+  - Source: GEO GSE135310
+  - Cells: ~38,600 (requires Wt1+ filtering)
+  - Timepoints: Day 0, 1, 3, 5, 7, 14, 28 post-MI
+  - Advantage: Temporal dynamics
+  - Status: NOT YET ANALYZED
+
+HUMAN DATA
+-------------------------------------------------------------------------------
+
+Dataset: PERIHEART Epicardial Cells
+  - Cells: 19,412 epicardial cells
+  - Conditions: 12,973 Normal (29 donors), 6,439 MI (1 donor)
+  - LIMITATION: All MI cells from single patient (PH-M57)
+  - Status: ANALYZED ✓
+
+CROSS-SPECIES INTEGRATION
+-------------------------------------------------------------------------------
+
+Will identify CONSERVED "primed but starved" pairs validated in both species.
+
+
+================================================================================
+3. PHASE 1: DATA PREPROCESSING AND CELL STATE CLASSIFICATION
+================================================================================
+
+3.1 QUALITY CONTROL (Already Completed)
+-------------------------------------------------------------------------------
+
+Mouse (Quaife-Ryan):
+  - All cells are epicardial by design (perfusion isolation)
+  - Standard QC: nFeature_RNA, percent.mt, doublet removal
+
+Human (PERIHEART):
+  - Epicardial identity confirmed via markers: WT1 (52.4%), TBX18 (48.7%), 
+    ALDH1A2 (62.0%), low PECAM1/CD31 (7.9%)
+
+
+3.2 CELL STATE CLASSIFICATION
+-------------------------------------------------------------------------------
+
+Method: Signature-based scoring with GMM threshold selection
+
+Quiescent Signature:
+  - Mouse: Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, Cldn3, Tjp1, Ocln
+  - Human: WT1, UPK3B, MSLN, KRT19, CDH1, CLDN1, CLDN3, TJP1, OCLN
+
+Activated Signature (EMT markers):
+  - Mouse: Snai1, Snai2, Twist1, Vim, Fn1, Col1a1, Col3a1, Postn, Acta2
+  - Human: SNAI1, SNAI2, TWIST1, VIM, FN1, COL1A1, COL3A1, POSTN, ACTA2
+
+Classification:
+  - state_potential = activated_score - quiescent_score
+  - GMM-based threshold selection for bimodal distribution
+  - Categories: Quiescent, Primed (Normal+high score), Bystander (MI+low), Activated
+
+```python
+import scanpy as sc
+from sklearn.mixture import GaussianMixture
+
+# Score cells
+sc.tl.score_genes(adata, quiescent_genes, score_name='quiescent_score', ctrl_size=50)
+sc.tl.score_genes(adata, activated_genes, score_name='activated_score', ctrl_size=50)
+
+# Calculate state potential
+adata.obs['state_potential'] = adata.obs['activated_score'] - adata.obs['quiescent_score']
+
+# GMM threshold
+gmm = GaussianMixture(n_components=2, random_state=42)
+gmm.fit(adata.obs['state_potential'].values.reshape(-1, 1))
+threshold = np.mean(gmm.means_)
+
+# Classify
+adata.obs['cell_state'] = 'quiescent'
+adata.obs.loc[adata.obs['state_potential'] > threshold, 'cell_state'] = 'activated'
+```
+
+RESULTS:
+
+| Dataset | Quiescent | Activated | % Activated |
+|---------|-----------|-----------|-------------|
+| Mouse Normal | 25,385 | 1,777 | 6.5% |
+| Mouse MI | 23,981 | 61,533 | 72.0% |
+| Human (all) | 18,091 | 1,916 | 5.8% |
+
+
+================================================================================
+4. PHASE 2: DIFFERENTIAL EXPRESSION ANALYSIS
+================================================================================
+
+4.1 ANALYSIS DESIGN
+-------------------------------------------------------------------------------
+
+Two parallel comparisons:
+
+A) Condition-based: Normal vs MI
+   - Captures disease-associated changes
+   - May include non-specific injury responses
+
+B) State-based: Quiescent vs Activated
+   - Captures molecular phenotype of activation
+   - More specific to epicardial biology
+
+
+4.2 METHODS
+-------------------------------------------------------------------------------
+
+```python
+# Wilcoxon rank-sum test
+sc.tl.rank_genes_groups(adata, groupby='condition', method='wilcoxon')
+sc.tl.rank_genes_groups(adata, groupby='cell_state', method='wilcoxon')
+
+# Extract results
+deg_condition = sc.get.rank_genes_groups_df(adata, group='MI')
+deg_state = sc.get.rank_genes_groups_df(adata, group='activated')
+
+# Filter significant
+deg_sig = deg_condition[deg_condition['pvals_adj'] < 0.05]
+```
+
+
+4.3 RECEPTOR-FOCUSED ANALYSIS
+-------------------------------------------------------------------------------
+
+Filter DEGs for known receptors (GO:0004872 - receptor activity):
+
+```python
+# Load receptor gene list (from GO annotations)
+receptor_genes = load_receptor_genes()  # ~1,500 genes
+
+# Filter DEGs
+receptor_degs = deg_sig[deg_sig['names'].isin(receptor_genes)]
+
+# Rank by logFC
+receptor_degs_up = receptor_degs[receptor_degs['logfoldchanges'] > 0].sort_values(
+    'logfoldchanges', ascending=False)
+```
+
+MOUSE RESULTS (Quaife-Ryan):
+
+| Rank | Receptor | logFC | Direction | Pathway |
+|------|----------|-------|-----------|---------|
+| 4 | Pdgfrl | +273.8 | ↑ Activated | PDGF |
+| 38 | Ryk | +66.5 | ↑ Activated | Wnt |
+| 39 | Igf2r | +65.7 | ↑ Activated | IGF |
+| 44 | Fzd2 | +60.9 | ↑ Activated | Wnt |
+| 63 | Fgfrl1 | +43.3 | ↑ Activated | FGF |
+| 116 | Acvr1 | +22.0 | ↑ Activated | BMP |
+| 161 | Bmpr2 | +15.1 | ↑ Activated | BMP |
+| 319 | **Fgfr2** | **+4.81** | ↑ Activated | FGF |
+
+
+================================================================================
+5. PHASE 3: LIGAND-RECEPTOR MISMATCH IDENTIFICATION
+================================================================================
+
+5.1 BUILD LIGAND-RECEPTOR DATABASE
+-------------------------------------------------------------------------------
+
+Merge curated databases:
+  - CellPhoneDB
+  - CellTalkDB
+  - NicheNet lr_network
+  - NATMI
+  - Ramilowski et al.
+
+```python
+import pandas as pd
+
+# Load databases
+cellphonedb = pd.read_csv('cellphonedb_interactions.csv')
+nichenet_lr = pd.read_csv('nichenet_lr_network.csv')
+celltalkdb = pd.read_csv('celltalkdb_interactions.csv')
+
+# Merge and deduplicate
+lr_pairs = pd.concat([cellphonedb, nichenet_lr, celltalkdb])
+lr_pairs = lr_pairs.drop_duplicates(subset=['ligand', 'receptor'])
+
+# ~5,000-10,000 unique pairs
+```
+
+
+5.2 IDENTIFY MISMATCH PAIRS
+-------------------------------------------------------------------------------
+
+Algorithm:
+1. For each receptor in DEG list (↑ in Activated)
+2. Find all cognate ligands from L-R database
+3. Check if ligand is ↓ in Activated (or not significantly changed)
+4. Score mismatch: receptor_logFC - ligand_logFC
+
+```python
+def find_mismatched_pairs(receptor_degs, ligand_degs, lr_database):
+    """
+    Find ligand-receptor pairs where receptor↑ and ligand↓
+    """
+    mismatched = []
+    
+    # Get upregulated receptors
+    receptors_up = receptor_degs[receptor_degs['logfoldchanges'] > 0]
+    
+    for _, receptor_row in receptors_up.iterrows():
+        receptor = receptor_row['names']
+        receptor_logfc = receptor_row['logfoldchanges']
+        
+        # Find cognate ligands
+        cognate_ligands = lr_database[lr_database['receptor'] == receptor]['ligand'].tolist()
+        
+        for ligand in cognate_ligands:
+            # Check ligand expression
+            ligand_data = ligand_degs[ligand_degs['names'] == ligand]
+            
+            if len(ligand_data) > 0:
+                ligand_logfc = ligand_data['logfoldchanges'].values[0]
+                
+                # Mismatch: receptor up, ligand down or unchanged
+                if ligand_logfc < 0:
+                    mismatch_score = receptor_logfc - ligand_logfc
+                    mismatched.append({
+                        'receptor': receptor,
+                        'ligand': ligand,
+                        'receptor_logfc': receptor_logfc,
+                        'ligand_logfc': ligand_logfc,
+                        'mismatch_score': mismatch_score,
+                        'pattern': 'Receptor↑_Ligand↓'
+                    })
+    
+    return pd.DataFrame(mismatched).sort_values('mismatch_score', ascending=False)
+```
+
+
+5.3 MISMATCH RESULTS
+-------------------------------------------------------------------------------
+
+MOUSE (Quaife-Ryan) — Top "Primed But Starved" Pairs:
+
+| Rank | Receptor | Receptor logFC | Ligand | Ligand logFC | Mismatch Score |
+|------|----------|----------------|--------|--------------|----------------|
+| 1 | Bmpr2 | +15.12 | Bmp4 | -73.53 | 88.65 |
+| 2 | Bmpr1a | +9.56 | Bmp4 | -73.53 | 83.09 |
+| 3 | Acvr1 | +21.96 | Bmp6 | -20.73 | 42.69 |
+| 4 | Fzd2 | +60.95 | Wnt9a | -6.91 | 67.86 |
+| 5 | Lrp6 | +12.87 | Wnt5b | -3.35 | 16.22 |
+| 6 | **Fgfr2** | **+4.81** | **Fgf10** | **-5.09** | **9.90** |
+| 7 | Fgfr2 | +4.81 | Fgf7 | -4.87 | 9.68 |
+| 8 | Fgfr2 | +4.81 | Fgf1 | -7.30 | 12.11 |
+
+**FGF10/FGFR2 validated as a "primed but starved" pair!**
+
+
+================================================================================
+6. PHASE 4: GENEFORMER FINE-TUNING AND IN SILICO PERTURBATION
+================================================================================
+
+6.1 OVERVIEW
+-------------------------------------------------------------------------------
+
+Geneformer is a foundation model pretrained on ~95M single-cell transcriptomes.
+We will use it for:
+
+A) Cell State Classification: Fine-tune to predict Quiescent vs Activated
+B) In Silico Perturbation: Delete receptors to measure activation dependency
+C) Ligand Effect Prediction: Simulate ligand addition effects
+
+
+6.2 DATA PREPARATION
+-------------------------------------------------------------------------------
+
+```python
+from geneformer import TranscriptomeTokenizer
+
+# Prepare AnnData with labels
+adata.obs['label'] = adata.obs['cell_state'].map({'quiescent': 0, 'activated': 1})
+
+# Ensure Ensembl gene IDs (required by Geneformer)
+# Convert gene symbols to Ensembl IDs
+gene_mapping = load_gene_mapping()  # symbol -> ensembl_id
+adata.var['ensembl_id'] = adata.var_names.map(gene_mapping)
+adata = adata[:, adata.var['ensembl_id'].notna()]
+adata.var_names = adata.var['ensembl_id']
+
+# Tokenize
+tokenizer = TranscriptomeTokenizer(
+    custom_attr_name_dict={"cell_state": "label"},
+    nproc=8
+)
+tokenized_data = tokenizer.tokenize_data(
+    adata,
+    output_directory="./tokenized/",
+    output_prefix="epicardial"
+)
+```
+
+
+6.3 ROUND 1: CELL STATE CLASSIFIER FINE-TUNING
+-------------------------------------------------------------------------------
+
+Fine-tune Geneformer to classify Quiescent vs Activated cells.
+
+```python
+from transformers import BertForSequenceClassification, Trainer, TrainingArguments
+from datasets import load_from_disk
+
+# Load tokenized data
+dataset = load_from_disk("./tokenized/epicardial.dataset")
+dataset = dataset.train_test_split(test_size=0.2, seed=42)
+
+# Load pretrained model
+model = BertForSequenceClassification.from_pretrained(
+    "ctheodoris/Geneformer",
+    num_labels=2,
+    output_attentions=False,
+    output_hidden_states=False
+)
+
+# Training arguments
+training_args = TrainingArguments(
+    output_dir="./geneformer_epicardial/",
+    num_train_epochs=5,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
+    warmup_steps=500,
+    weight_decay=0.01,
+    logging_steps=100,
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    fp16=True,  # Mixed precision for memory efficiency
+)
+
+# Metrics
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+import numpy as np
+
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = np.argmax(pred.predictions, axis=1)
+    probs = softmax(pred.predictions, axis=1)[:, 1]
+    return {
+        "accuracy": accuracy_score(labels, preds),
+        "f1": f1_score(labels, preds),
+        "auroc": roc_auc_score(labels, probs)
+    }
+
+# Train
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["test"],
+    compute_metrics=compute_metrics
+)
+
+trainer.train()
+trainer.save_model("./geneformer_epicardial_classifier/")
+```
+
+EXPECTED PERFORMANCE:
+  - Accuracy: >85%
+  - AUROC: >0.90
+  - F1: >0.80
+
+
+6.4 ROUND 2: IN SILICO RECEPTOR PERTURBATION
+-------------------------------------------------------------------------------
+
+For each receptor, delete from tokenized input and measure:
+1. Change in predicted activation probability
+2. Shift in embedding space
+
+```python
+from geneformer import InSilicoPerturber
+
+# Initialize perturber with fine-tuned classifier
+perturber = InSilicoPerturber(
+    perturb_type="delete",
+    model_type="CellClassifier",
+    num_classes=2,
+    emb_mode="cell",
+    cell_states_to_model={"state_key": "label", "start_state": "quiescent", "goal_state": "activated"}
+)
+
+# Define candidate receptors (from L-R mismatch analysis)
+candidate_receptors = [
+    "ENSG00000066468",  # FGFR2
+    "ENSG00000204217",  # BMPR2
+    "ENSG00000107779",  # BMPR1A
+    "ENSG00000115170",  # ACVR1
+    "ENSG00000180340",  # FZD2
+    "ENSG00000070018",  # LRP6
+    # ... add all mismatched receptors
+]
+
+# Run perturbation
+perturber.perturb_data(
+    model_directory="./geneformer_epicardial_classifier/",
+    input_data_file="./tokenized/epicardial.dataset",
+    output_directory="./perturbation_results/",
+    genes_to_perturb=candidate_receptors
+)
+```
+
+
+6.5 PERTURBATION ANALYSIS
+-------------------------------------------------------------------------------
+
+```python
+import pandas as pd
+
+# Load results
+results = pd.read_csv("./perturbation_results/perturbation_stats.csv")
+
+# Calculate effect: change in activation probability upon receptor deletion
+results['activation_effect'] = results['prob_activated_perturbed'] - results['prob_activated_original']
+
+# Interpretation:
+# - Negative effect: Receptor REQUIRED for activation (deletion reduces activation)
+# - Positive effect: Receptor INHIBITS activation (deletion increases activation)
+
+# Rank receptors by importance for activation
+results_sorted = results.sort_values('activation_effect')
+
+# Top receptors required for activation (most negative effect)
+print("Receptors REQUIRED for activation (deletion inhibits):")
+print(results_sorted.head(20))
+
+# Validate: FGFR2 should have negative effect
+fgfr2_effect = results[results['gene'] == 'FGFR2']['activation_effect'].values[0]
+print(f"FGFR2 effect: {fgfr2_effect}")
+```
+
+
+6.6 ROUND 3: IN SILICO LIGAND ADDITION (ADVANCED)
+-------------------------------------------------------------------------------
+
+Simulate effect of adding depleted ligands by:
+1. Overexpressing ligand in tokenized representation
+2. Measuring predicted shift toward activated state
+
+```python
+# Alternative: Use NicheNet to predict downstream effects
+from nichenetr import predict_ligand_activities
+
+# For each depleted ligand, predict effect on activation signature
+activation_signature = ['Vim', 'Fn1', 'Col1a1', 'Snai1', 'Twist1']
+
+ligand_activities = predict_ligand_activities(
+    geneset=activation_signature,
+    ligand_target_matrix=ligand_target_matrix,
+    potential_ligands=['Fgf10', 'Bmp4', 'Bmp7', 'Wnt5b']
+)
+
+# High activity score = ligand predicted to induce activation
+```
+
+
+================================================================================
+7. PHASE 5: CROSS-SPECIES VALIDATION
+================================================================================
+
+7.1 ORTHOLOG MAPPING
+-------------------------------------------------------------------------------
+
+```python
+import pandas as pd
+
+# Load ortholog mapping (from Ensembl BioMart)
+orthologs = pd.read_csv('mouse_human_orthologs.csv')
+
+# Map mouse receptors to human
+mouse_receptors = ['Fgfr2', 'Bmpr2', 'Acvr1', 'Fzd2', 'Lrp6']
+human_receptors = [orthologs[orthologs['mouse_gene'] == r]['human_gene'].values[0] 
+                   for r in mouse_receptors]
+```
+
+
+7.2 CONSERVATION ANALYSIS
+-------------------------------------------------------------------------------
+
+For each mismatch pair, check if pattern is conserved:
+
+| Pair | Mouse Receptor↑ | Mouse Ligand↓ | Human Receptor↑ | Human Ligand↓ | Conserved? |
+|------|-----------------|---------------|-----------------|---------------|------------|
+| FGF10/FGFR2 | +4.81 | -5.09 | +0.57 | TBD | Partial |
+| BMP4/BMPR2 | +15.12 | -73.53 | TBD | TBD | TBD |
+| WNT9A/FZD2 | +60.95 | -6.91 | TBD | TBD | TBD |
+
+```python
+def check_conservation(mouse_degs, human_degs, pair):
+    """
+    Check if receptor↑/ligand↓ pattern is conserved across species
+    """
+    mouse_receptor = pair['mouse_receptor']
+    human_receptor = pair['human_receptor']
+    mouse_ligand = pair['mouse_ligand']
+    human_ligand = pair['human_ligand']
+    
+    # Check mouse
+    mouse_receptor_up = mouse_degs[mouse_degs['gene'] == mouse_receptor]['logFC'].values[0] > 0
+    mouse_ligand_down = mouse_degs[mouse_degs['gene'] == mouse_ligand]['logFC'].values[0] < 0
+    mouse_pattern = mouse_receptor_up and mouse_ligand_down
+    
+    # Check human
+    human_receptor_up = human_degs[human_degs['gene'] == human_receptor]['logFC'].values[0] > 0
+    human_ligand_down = human_degs[human_degs['gene'] == human_ligand]['logFC'].values[0] < 0
+    human_pattern = human_receptor_up and human_ligand_down
+    
+    return mouse_pattern and human_pattern
+```
+
+
+7.3 PRIORITIZE CONSERVED PAIRS
+-------------------------------------------------------------------------------
+
+Pairs conserved across mouse AND human are highest confidence therapeutic targets.
+
+
+================================================================================
+8. PHASE 6: THERAPEUTIC TARGET PRIORITIZATION
+================================================================================
+
+8.1 SCORING CRITERIA
+-------------------------------------------------------------------------------
+
+For each L-R mismatch pair, calculate composite score:
+
+| Criterion | Weight | Description |
+|-----------|--------|-------------|
+| Mismatch Score | 25% | receptor_logFC - ligand_logFC |
+| Geneformer Effect | 25% | |deletion_effect| from perturbation |
+| Conservation | 20% | Present in both mouse and human |
+| Druggability | 15% | Ligand available as recombinant protein |
+| Literature Support | 15% | Prior evidence for cardioprotection |
+
+```python
+def calculate_priority_score(pair):
+    score = 0
+    
+    # Mismatch magnitude
+    score += 0.25 * normalize(pair['mismatch_score'])
+    
+    # Geneformer perturbation effect
+    score += 0.25 * normalize(abs(pair['geneformer_effect']))
+    
+    # Cross-species conservation
+    score += 0.20 * (1 if pair['conserved'] else 0)
+    
+    # Druggability (recombinant ligand available)
+    score += 0.15 * (1 if pair['ligand_available'] else 0)
+    
+    # Literature support
+    score += 0.15 * normalize(pair['pubmed_citations'])
+    
+    return score
+```
+
+
+8.2 FINAL RANKED LIST
+-------------------------------------------------------------------------------
+
+EXPECTED OUTPUT:
+
+| Rank | Receptor | Ligand | Priority Score | Conservation | Action |
+|------|----------|--------|----------------|--------------|--------|
+| 1 | BMPR2 | BMP7 | 0.92 | Mouse+Human | Deliver BMP7 |
+| 2 | FGFR2 | FGF10 | 0.88 | Mouse+Human | Deliver FGF10 ✓ |
+| 3 | FZD2/LRP6 | WNT | 0.81 | Mouse only | Wnt agonist |
+| 4 | ACVR1 | BMP6 | 0.76 | TBD | Deliver BMP6 |
+
+
+================================================================================
+9. EXPECTED OUTPUTS
+================================================================================
+
+9.1 DATA FILES
+-------------------------------------------------------------------------------
+
+1. cell_state_classification.csv
+   - Cell-level classification (quiescent, primed, bystander, activated)
+
+2. deg_analysis_mouse.csv / deg_analysis_human.csv
+   - Full differential expression results
+
+3. receptor_rankings.csv
+   - Ranked receptors by logFC in activated cells
+
+4. ligand_receptor_mismatches.csv
+   - All "receptor↑/ligand↓" pairs with scores
+
+5. geneformer_perturbation_results.csv
+   - Effect of receptor deletion on activation probability
+
+6. cross_species_conservation.csv
+   - Conservation status for each pair
+
+7. therapeutic_targets_prioritized.csv
+   - Final ranked list with composite scores
+
+
+================================================================================
+9.2 KEY FIGURES (Publication Ready)
+================================================================================
+
+███████████████████████████████████████████████████████████████████████████████
+FIGURE 1: CELL STATE LANDSCAPE AND FGF FAMILY EXPRESSION
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: UMAP - Cell States
+  - Color by: Quiescent (blue), Activated (red)
+  - Split by: Normal vs MI condition
+  - Shows dramatic shift toward activation post-MI
+
+Panel B: UMAP - FGFR2 Expression
+  - Continuous color scale (gray → red)
+  - Highlights co-localization with activated cluster
+
+Panel C: UMAP - FGF10 Expression  
+  - Continuous color scale (gray → blue)
+  - Highlights enrichment in quiescent cluster
+
+Panel D: Violin Plots - FGF Family by Cell State
+  - Genes: Fgf1, Fgf2, Fgf7, Fgf10, Fgfr1, Fgfr2
+  - Split by: Quiescent vs Activated
+  - Key message: FGFR2 is ONLY FGF gene upregulated in activated
+
+
+███████████████████████████████████████████████████████████████████████████████
+FIGURE 2: RECEPTOR DIFFERENTIAL EXPRESSION LANDSCAPE
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Volcano Plot - All Receptors
+  - X-axis: log2FC (Activated vs Quiescent)
+  - Y-axis: -log10(padj)
+  - Highlight: FGFR2, BMPR2, FZD2, ACVR1, EGFR, TGFBR1
+  - Color: Upregulated (red), Downregulated (blue), NS (gray)
+
+Panel B: Receptor Ranking Bar Plot
+  - Top 20 upregulated receptors by logFC
+  - Annotate pathway for each (FGF, BMP, WNT, TGF-β, etc.)
+  - Highlight FGFR2 position
+
+Panel C: Pathway-Level Summary
+  - Grouped bar chart by signaling pathway
+  - Show proportion of receptors up vs down per pathway
+  - Pathways: FGF, BMP, WNT, TGF-β, PDGF, VEGF, Notch
+
+
+███████████████████████████████████████████████████████████████████████████████
+FIGURE 3: "PRIMED BUT STARVED" LIGAND-RECEPTOR MISMATCH
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Concept Diagram
+  - Schematic showing: Normal (ligand=high, receptor=low) 
+                    vs MI (ligand=low, receptor=high)
+  - Arrow indicating "therapeutic window"
+
+Panel B: Heatmap - Top Mismatch Pairs
+  - Rows: Ligand-Receptor pairs (FGF10-FGFR2, BMP4-BMPR2, etc.)
+  - Columns: Receptor logFC | Ligand logFC | Mismatch Score
+  - Color scale: Red (up), Blue (down)
+  - Cluster by pathway
+
+Panel C: Scatter Plot - Receptor vs Ligand logFC
+  - X-axis: Receptor logFC
+  - Y-axis: Ligand logFC
+  - Quadrants labeled:
+    - Q1 (top-right): Both up - balanced
+    - Q2 (top-left): Receptor down, Ligand up - inverse
+    - Q3 (bottom-left): Both down - shutdown
+    - Q4 (bottom-right): Receptor up, Ligand down - "PRIMED BUT STARVED" ★
+  - Highlight FGF10/FGFR2, BMP4/BMPR2 in Q4
+
+Panel D: Mismatch Score Ranking
+  - Horizontal bar chart
+  - Top 15 pairs ranked by mismatch score
+  - Color by pathway
+
+
+███████████████████████████████████████████████████████████████████████████████
+FIGURE 4: GENEFORMER IN SILICO PERTURBATION
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Classifier Performance
+  - ROC curve for Quiescent vs Activated classification
+  - Report AUROC, Accuracy, F1
+
+Panel B: Perturbation Effect - Waterfall Plot
+  - X-axis: Receptors (ordered by effect)
+  - Y-axis: Change in activation probability upon deletion
+  - Negative bars: Receptor REQUIRED for activation
+  - Highlight FGFR2, BMPR2, FZD2
+
+Panel C: Perturbation Effect by Pathway
+  - Box plot grouped by pathway
+  - Shows which pathways are most critical for activation
+
+Panel D: FGFR2 Perturbation Detail
+  - Before/After activation probability distribution
+  - Shows FGFR2 deletion reduces activation
+
+
+███████████████████████████████████████████████████████████████████████████████
+FIGURE 5: CROSS-SPECIES CONSERVATION
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Mouse vs Human Receptor Correlation
+  - Scatter plot: Mouse logFC vs Human logFC
+  - Each point = one receptor
+  - Highlight conserved upregulated (FGFR2, BMPR2, etc.)
+
+Panel B: Conservation Heatmap
+  - Rows: Top 20 mismatch pairs
+  - Columns: Mouse Receptor | Mouse Ligand | Human Receptor | Human Ligand
+  - Color: Up (red), Down (blue), NS (gray)
+  - Side annotation: Conserved (✓) or Not (✗)
+
+Panel C: Venn Diagram
+  - Mouse-only mismatch pairs
+  - Human-only mismatch pairs
+  - Conserved (intersection) - HIGHEST PRIORITY
+
+Panel D: Final Prioritized Targets
+  - Table format showing:
+    - Rank | Receptor | Ligand | Conservation | Druggability | Priority Score
+  - Top 10 therapeutic candidates
+
+
+███████████████████████████████████████████████████████████████████████████████
+SUPPLEMENTARY FIGURE 1: CELL STATE CLASSIFICATION METHOD
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Signature Gene Expression
+  - Heatmap of quiescent vs activated signature genes
+  - Shows marker specificity
+
+Panel B: GMM Threshold Selection
+  - Histogram of state_potential scores
+  - GMM fit with two components
+  - Threshold line
+
+Panel C: Activation Probability Distribution
+  - By condition (Normal vs MI)
+  - Shows shift toward activation post-MI
+
+
+███████████████████████████████████████████████████████████████████████████████
+SUPPLEMENTARY FIGURE 2: LIGAND-RECEPTOR DATABASE
+███████████████████████████████████████████████████████████████████████████████
+
+Panel A: Database Sources
+  - Bar chart showing contribution from each source
+  - CellPhoneDB, NicheNet, CellTalkDB, NATMI
+
+Panel B: Coverage
+  - Number of unique ligands, receptors, pairs
+
+Panel C: Pathway Distribution
+  - Pie chart of L-R pairs by pathway
+
+
+================================================================================
+
+9.3 VALIDATION METRICS
+-------------------------------------------------------------------------------
+
+1. FGF10/FGFR2 should rank in top 10 pairs (wet lab validated)
+2. Geneformer classifier AUROC > 0.85
+3. >50% of top pairs conserved across species
+
+
+================================================================================
+APPENDIX: TROUBLESHOOTING
+================================================================================
+
+A1. GENEFORMER MEMORY ISSUES
+-------------------------------------------------------------------------------
+
+If GPU runs out of memory:
+
+1. Reduce batch size:
+   per_device_train_batch_size=4 or 2
+
+2. Use gradient accumulation:
+   gradient_accumulation_steps=4
+
+3. Enable gradient checkpointing:
+   model.gradient_checkpointing_enable()
+
+4. Use mixed precision:
+   fp16=True
+
+5. Subset data for initial testing:
+   dataset = dataset.select(range(10000))
+
+
+A2. HUMAN DATA LIMITATION
+-------------------------------------------------------------------------------
+
+All MI cells from single patient (PH-M57).
+
+Mitigation strategies:
+1. Bootstrap analysis (already done)
+2. Focus on cell state comparison (quiescent vs activated)
+3. Require mouse conservation for confidence
+
+
+A3. FGFR2 RANKING IN HUMAN
+-------------------------------------------------------------------------------
+
+FGFR2 ranked ~45/84 in human (moderate, not top).
+
+Possible explanations:
+1. Single-patient MI data confounds results
+2. Human epicardium may have different activation dynamics
+3. FGFR2 upregulation may be earlier (need time course)
+
+Action: Prioritize mouse-human conserved pairs where BOTH show strong signal.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================

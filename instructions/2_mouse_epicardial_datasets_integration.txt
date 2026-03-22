@@ -1,0 +1,539 @@
+================================================================================
+MOUSE MI SINGLE-CELL DATASETS WITH EPICARDIAL CELLS
+Integration Guide for Epicardial Target Discovery Pipeline
+================================================================================
+
+================================================================================
+DATASET SUMMARIES
+================================================================================
+
+-------------------------------------------------------------------------------
+DATASET 1: Quaife-Ryan et al. 2021 (eLife) — BEST FOR EPICARDIAL ANALYSIS
+-------------------------------------------------------------------------------
+
+Title: "Single-cell transcriptomics defines heterogeneity of epicardial cells 
+       and fibroblasts within the infarcted murine heart"
+
+Publication: eLife 2021;10:e65921
+DOI: 10.7554/eLife.65921
+URL: https://elifesciences.org/articles/65921
+
+Data Access:
+  - Contact authors for processed data
+  - Raw data: ArrayExpress (check supplementary materials)
+
+Cell Numbers:
+  - ~13,796 epicardial stromal cells (EpiSC)
+  - ~24,470 activated cardiac stromal cells (aCSC)
+  - ~24,781 control cardiac stromal cells (CSC)
+
+Timepoint: Day 5 post-MI (ischemia/reperfusion model)
+
+Model: C57BL/6 mice, 50 min ischemia followed by reperfusion
+
+Key Features:
+  - DEDICATED EPICARDIAL ISOLATION using novel perfusion-based technique
+  - Physically separates epicardial cells from myocardial fibroblasts
+  - 11 transcriptionally distinct EpiSC populations identified
+  - Includes Wt1 lineage tracing validation
+  - RNA in situ hybridization for spatial localization
+  - Compares EpiSC vs aCSC directly from same hearts
+
+Epicardial Populations Identified:
+  - Three main groups, each with proliferating subcluster
+  - Two groups express cardiac specification markers (cardiomyogenic potential)
+  - HIF-1α enrichment consistent with epicardial hypoxic niche
+  - Populations express chemokines and paracrine factors
+
+Epicardial Markers Used:
+  - Msln (Mesothelin) — primary identifier
+  - Wt1 (Wilms tumor 1)
+  - Upk3b, Krt19 (epithelial markers)
+
+Why Use This Dataset:
+  - Highest resolution of epicardial heterogeneity post-MI
+  - Direct comparison of epicardial vs myocardial stromal cells
+  - Validated isolation technique ensures pure epicardial population
+  - Ideal for identifying epicardial-specific receptor expression
+
+
+-------------------------------------------------------------------------------
+DATASET 2: Forte et al. — GSE135310 / E-MTAB-13147 — BEST TIME COURSE
+-------------------------------------------------------------------------------
+
+Title: "Time series single cell transcriptomics of cardiac inflammation 
+       after myocardial infarction in mice"
+
+Data Access:
+  - GEO: GSE135310
+  - ArrayExpress: E-MTAB-13147
+  - Download: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE135310
+
+Cell Numbers:
+  - ~38,600 cells from C57BL/6J (B6) mice
+  - ~13,000 cells from 129S1/SvlmJ (129) mice
+
+Timepoints: Day 0 (sham), 1, 3, 5, 7, 14, 28 post-MI
+
+Model: 
+  - C57BL/6J background (resistant to rupture)
+  - 129S1/SvlmJ background (rupture-prone, day 3 only)
+
+Key Features:
+  - GENETIC LABELING: Wt1-Cre;Rosa-ZsGreen transgenic mice
+  - Epicardial cells express ZsGreen under Wt1 promoter control
+  - Comprehensive time course captures full activation dynamics
+  - Comparison of rupture-resistant vs rupture-prone strains
+  - 10x Genomics Chromium V3 platform
+
+Epicardial Identification:
+  - ZsGreen+ cells = Wt1-expressing epicardial lineage
+  - Allows tracking of epicardial-derived cells over time
+  - Captures quiescent → activated → post-EMT transitions
+
+Why Use This Dataset:
+  - Time course essential for identifying temporal activation patterns
+  - Genetic labeling ensures reliable epicardial identification
+  - Can define "activation window" (day 3-7) for target discovery
+  - Strain comparison provides insights into repair vs rupture
+
+
+-------------------------------------------------------------------------------
+DATASET 3: Farbehi et al. 2019 (eLife) — GSE130699 — COMPREHENSIVE ATLAS
+-------------------------------------------------------------------------------
+
+Title: "Single-cell expression profiling reveals dynamic flux of cardiac 
+       stromal, vascular and immune cells in health and injury"
+
+Publication: eLife 2019;8:e43882
+DOI: 10.7554/eLife.43882
+URL: https://elifesciences.org/articles/43882
+
+Data Access:
+  - GEO: GSE130699
+  - Download: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE130699
+
+Cell Numbers: >30,000 cells total
+
+Timepoints: Day 3 and Day 7 post-MI vs Sham
+
+Model: 
+  - C57BL/6 mice
+  - Pdgfra-GFP+ enrichment for fibroblast lineage
+  - Total interstitial population (TIP) for comprehensive view
+
+Key Features:
+  - >30 cell populations across 9 lineages
+  - Identified novel Wif1+ fibroblast trajectory (anti-WNT signature)
+  - Discovered pro-fibrotic vs anti-fibrotic myofibroblast subtypes
+  - Comprehensive immune cell characterization
+  - Well-documented analysis pipeline
+
+Epicardial Cells:
+  - Small population detected at MI-day 7 only
+  - Express Wt1 and correlate with adult epicardium transcriptome
+  - Likely epicardial-derived fibroblasts (express Pdgfra)
+  - Under-sampled compared to dedicated epicardial studies
+
+Why Use This Dataset:
+  - Well-established, widely cited reference dataset
+  - Comprehensive view of all cardiac interstitial populations
+  - Good for sender cell (fibroblast, immune) characterization
+  - Useful for cross-validation with epicardial-focused datasets
+
+
+================================================================================
+INTEGRATION INTO EPICARDIAL TARGET DISCOVERY PIPELINE
+================================================================================
+
+STRATEGY: Use mouse datasets to complement human data (Kuppe, Linna-Kuosmanen)
+for cross-species validation and to leverage genetic labeling/dedicated 
+epicardial isolation not available in human samples.
+
+
+-------------------------------------------------------------------------------
+STEP 1: DATA DOWNLOAD AND ORGANIZATION
+-------------------------------------------------------------------------------
+
+```bash
+# Create directory structure
+mkdir -p data/mouse/quaife_ryan_2021
+mkdir -p data/mouse/forte_gse135310
+mkdir -p data/mouse/farbehi_gse130699
+mkdir -p data/human/kuppe_2022
+mkdir -p data/human/linna_kuosmanen_2024
+
+# Download Farbehi dataset from GEO
+cd data/mouse/farbehi_gse130699
+wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE130nnn/GSE130699/suppl/GSE130699_RAW.tar
+tar -xvf GSE130699_RAW.tar
+
+# Download Forte dataset from GEO
+cd ../forte_gse135310
+wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE135nnn/GSE135310/suppl/GSE135310_RAW.tar
+tar -xvf GSE135310_RAW.tar
+
+# Quaife-Ryan: Contact authors or check ArrayExpress for processed data
+# Human data: Download from CellxGene (https://cellxgene.cziscience.com)
+```
+
+
+-------------------------------------------------------------------------------
+STEP 2: PROCESSING MOUSE DATASETS
+-------------------------------------------------------------------------------
+
+```R
+library(Seurat)
+library(harmony)
+
+# =============================================================================
+# PROCESS QUAIFE-RYAN 2021 (Epicardial-focused)
+# =============================================================================
+
+# Load EpiSC and aCSC data (format depends on author-provided files)
+episc <- Read10X(data.dir = "data/mouse/quaife_ryan_2021/EpiSC/")
+acsc <- Read10X(data.dir = "data/mouse/quaife_ryan_2021/aCSC/")
+
+# Create Seurat objects
+episc_seurat <- CreateSeuratObject(counts = episc, project = "EpiSC_MI")
+acsc_seurat <- CreateSeuratObject(counts = acsc, project = "aCSC_MI")
+
+# Add metadata
+episc_seurat$cell_source <- "epicardial"
+episc_seurat$condition <- "MI_day5"
+acsc_seurat$cell_source <- "myocardial"
+acsc_seurat$condition <- "MI_day5"
+
+# Standard QC
+episc_seurat[["percent.mt"]] <- PercentageFeatureSet(episc_seurat, pattern = "^mt-")
+episc_seurat <- subset(episc_seurat, 
+                       subset = nFeature_RNA > 200 & 
+                                nFeature_RNA < 5000 & 
+                                percent.mt < 15)
+
+# =============================================================================
+# PROCESS FORTE GSE135310 (Time course)
+# =============================================================================
+
+# Load each timepoint
+timepoints <- c("sham", "d1", "d3", "d5", "d7", "d14", "d28")
+forte_list <- list()
+
+for (tp in timepoints) {
+  counts <- Read10X(data.dir = paste0("data/mouse/forte_gse135310/", tp, "/"))
+  seurat_obj <- CreateSeuratObject(counts = counts, project = paste0("Forte_", tp))
+  seurat_obj$timepoint <- tp
+  seurat_obj$dataset <- "Forte"
+  forte_list[[tp]] <- seurat_obj
+}
+
+# Merge all timepoints
+forte_merged <- merge(forte_list[[1]], forte_list[2:length(forte_list)])
+
+# QC and normalize
+forte_merged[["percent.mt"]] <- PercentageFeatureSet(forte_merged, pattern = "^mt-")
+forte_merged <- subset(forte_merged, 
+                       subset = nFeature_RNA > 200 & 
+                                nFeature_RNA < 5000 & 
+                                percent.mt < 15)
+
+# =============================================================================
+# PROCESS FARBEHI GSE130699
+# =============================================================================
+
+# Similar processing for Farbehi data
+# Note: This dataset has both TIP (total) and GFP+ (Pdgfra+) fractions
+```
+
+
+-------------------------------------------------------------------------------
+STEP 3: EPICARDIAL CELL IDENTIFICATION (MOUSE-SPECIFIC MARKERS)
+-------------------------------------------------------------------------------
+
+```R
+# Mouse epicardial markers (note: gene symbols are lowercase in mouse)
+mouse_epicardial_markers <- c(
+  "Wt1",      # Wilms tumor 1 - master regulator
+  "Tbx18",    # T-box 18
+  "Msln",     # Mesothelin - highly specific
+  "Upk3b",    # Uroplakin 3B
+  "Aldh1a2",  # Retinaldehyde dehydrogenase
+  "Krt19",    # Cytokeratin 19
+  "Lrrn4"     # Leucine rich repeat neuronal 4 (novel marker)
+)
+
+# Note: Tcf21 excluded due to low expression (as per your specification)
+
+# Score cells for epicardial identity
+forte_merged <- AddModuleScore(forte_merged,
+                               features = list(mouse_epicardial_markers),
+                               name = "Epicardial_Score")
+
+# For Forte dataset: Also use ZsGreen reporter if available in metadata
+# ZsGreen+ cells = Wt1-expressing epicardial lineage
+
+# Subset epicardial cells
+epicardial_forte <- subset(forte_merged, 
+                           subset = Epicardial_Score1 > 0.5)  # Adjust threshold
+
+# For Quaife-Ryan: EpiSC fraction is already epicardial-enriched
+# But verify with markers
+episc_seurat <- AddModuleScore(episc_seurat,
+                               features = list(mouse_epicardial_markers),
+                               name = "Epicardial_Score")
+```
+
+
+-------------------------------------------------------------------------------
+STEP 4: DEFINE ACTIVATION STATES ACROSS TIME COURSE
+-------------------------------------------------------------------------------
+
+```R
+# Proliferation signature (mouse gene symbols)
+mouse_proliferation <- c("Mki67", "Top2a", "Pcna", "Cdk1", "Ccnb1", 
+                         "Ccnb2", "Ccna2", "Mcm2", "Mcm6", "Aurka")
+
+# EMT signature (mouse gene symbols)
+mouse_emt_up <- c("Snai1", "Snai2", "Twist1", "Zeb1", "Zeb2", 
+                  "Vim", "Cdh2", "Fn1", "Acta2")
+mouse_emt_down <- c("Cdh1", "Cldn1", "Tjp1", "Ocln")
+
+# Score epicardial cells
+epicardial_forte <- AddModuleScore(epicardial_forte,
+                                   features = list(mouse_proliferation),
+                                   name = "Proliferation")
+epicardial_forte <- AddModuleScore(epicardial_forte,
+                                   features = list(mouse_emt_up),
+                                   name = "EMT_up")
+epicardial_forte <- AddModuleScore(epicardial_forte,
+                                   features = list(mouse_emt_down),
+                                   name = "EMT_down")
+
+epicardial_forte$EMT_score <- epicardial_forte$EMT_up1 - epicardial_forte$EMT_down1
+
+# Label activation state based on timepoint
+epicardial_forte$activation_state <- ifelse(
+  epicardial_forte$timepoint %in% c("sham"), "quiescent",
+  ifelse(epicardial_forte$timepoint %in% c("d3", "d5", "d7"), "activated", "resolving")
+)
+
+# Visualize activation dynamics
+library(ggplot2)
+ggplot(epicardial_forte@meta.data, 
+       aes(x = timepoint, y = Proliferation1, fill = timepoint)) +
+  geom_violin() +
+  theme_minimal() +
+  labs(title = "Epicardial Proliferation Score Across MI Time Course")
+```
+
+
+-------------------------------------------------------------------------------
+STEP 5: NicheNet ANALYSIS WITH MOUSE DATA
+-------------------------------------------------------------------------------
+
+```R
+library(nichenetr)
+
+# Load mouse-specific NicheNet matrices
+ligand_target_matrix_mm <- readRDS(url(
+  "https://zenodo.org/record/3260758/files/ligand_target_matrix_mm.rds"))
+lr_network_mm <- readRDS(url(
+  "https://zenodo.org/record/3260758/files/lr_network_mm.rds"))
+
+# Use Farbehi dataset for sender cells (comprehensive interstitial atlas)
+# Define sender populations
+sender_celltypes <- c("Cardiomyocyte", "Fibroblast", "Macrophage", 
+                      "Endothelial", "Monocyte")
+
+# Receiver = Epicardial cells (from Quaife-Ryan or Forte)
+receiver_celltype <- "Epicardial"
+
+# Gene set of interest: Activation signature
+geneset_oi <- c("Mki67", "Top2a", "Vim", "Snai1", "Snai2", "Twist1",
+                "Postn", "Col1a1", "Fn1", "Acta2", "Msln")
+
+# Get expressed genes in receiver (epicardial)
+expressed_genes_receiver <- rownames(episc_seurat)[
+  Matrix::rowMeans(episc_seurat@assays$RNA@counts > 0) > 0.1
+]
+
+# Get expressed genes in senders (from Farbehi comprehensive atlas)
+# ... (similar to human pipeline)
+
+# Run NicheNet
+ligand_activities <- predict_ligand_activities(
+  geneset = geneset_oi,
+  background_expressed_genes = expressed_genes_receiver,
+  ligand_target_matrix = ligand_target_matrix_mm,
+  potential_ligands = potential_ligands
+)
+
+# Check FGF10 ranking (positive control)
+print(ligand_activities %>% filter(test_ligand == "Fgf10"))
+
+# Top ligands
+top_ligands <- ligand_activities %>% 
+  top_n(20, pearson) %>% 
+  pull(test_ligand)
+```
+
+
+-------------------------------------------------------------------------------
+STEP 6: CROSS-SPECIES VALIDATION
+-------------------------------------------------------------------------------
+
+```R
+# Compare top receptor candidates between mouse and human
+
+# Mouse receptors from NicheNet
+mouse_top_receptors <- lr_network_mm %>%
+  filter(from %in% top_ligands) %>%
+  pull(to) %>% unique()
+
+# Human receptors (from Kuppe/Linna-Kuosmanen analysis)
+# ... run similar NicheNet on human data ...
+
+# Find conserved receptors
+conserved_receptors <- intersect(
+  toupper(mouse_top_receptors),  # Convert to human gene symbols
+  human_top_receptors
+)
+
+print("Conserved receptor candidates across species:")
+print(conserved_receptors)
+
+# Prioritize conserved receptors for downstream analysis
+# These are higher confidence targets for translation
+```
+
+
+-------------------------------------------------------------------------------
+STEP 7: PREPARE DATA FOR GENEFORMER
+-------------------------------------------------------------------------------
+
+```R
+# Combine mouse epicardial data for Geneformer training
+# Use Forte time course for temporal labels
+
+# Convert to AnnData format for Python/Geneformer
+library(SeuratDisk)
+
+# Save as h5ad
+SaveH5Seurat(epicardial_forte, filename = "epicardial_forte.h5Seurat")
+Convert("epicardial_forte.h5Seurat", dest = "h5ad")
+
+# In Python, load and prepare for Geneformer
+# Note: Geneformer requires Ensembl gene IDs
+# Use biomart to convert mouse gene symbols to Ensembl IDs
+```
+
+```python
+import scanpy as sc
+import pandas as pd
+
+# Load mouse epicardial data
+adata = sc.read_h5ad("epicardial_forte.h5ad")
+
+# Convert gene symbols to Ensembl IDs (required for Geneformer)
+# Load mouse gene mapping
+gene_mapping = pd.read_csv("mouse_gene_symbol_to_ensembl.csv")
+adata.var['ensembl_id'] = adata.var_names.map(
+    dict(zip(gene_mapping['symbol'], gene_mapping['ensembl_id']))
+)
+
+# Filter genes without Ensembl mapping
+adata = adata[:, adata.var['ensembl_id'].notna()]
+adata.var_names = adata.var['ensembl_id']
+
+# Add activation labels
+adata.obs['activation_label'] = adata.obs['activation_state'].map({
+    'quiescent': 0,
+    'activated': 1,
+    'resolving': 0  # Group with quiescent for binary classification
+})
+
+# Save for Geneformer
+adata.write_h5ad("epicardial_mouse_for_geneformer.h5ad")
+```
+
+
+================================================================================
+RECOMMENDED WORKFLOW
+================================================================================
+
+1. DOWNLOAD ALL DATASETS
+   - Human: Kuppe 2022, Linna-Kuosmanen 2024 (from CellxGene)
+   - Mouse: Quaife-Ryan 2021, Forte GSE135310, Farbehi GSE130699 (from GEO)
+
+2. PROCESS SEPARATELY
+   - Apply species-specific QC and normalization
+   - Identify epicardial cells using appropriate markers
+
+3. RUN NicheNet ON EACH SPECIES
+   - Use species-specific ligand-target matrices
+   - Compare top-ranked ligands and receptors
+
+4. IDENTIFY CONSERVED TARGETS
+   - Receptors ranking highly in BOTH mouse and human
+   - These are highest-confidence translational candidates
+
+5. USE MOUSE TIME COURSE FOR TEMPORAL DYNAMICS
+   - Forte dataset captures day 0-28 post-MI
+   - Define optimal "activation window" for therapeutic intervention
+   - Identify receptors upregulated specifically during activation
+
+6. USE QUAIFE-RYAN FOR EPICARDIAL HETEROGENEITY
+   - 11 distinct EpiSC populations
+   - Identify which populations express target receptors
+   - Determine if targets are specific to activated subpopulations
+
+7. TRAIN GENEFORMER ON COMBINED DATA
+   - Mouse data provides temporal labels (quiescent vs activated)
+   - In silico perturbation to rank receptor importance
+
+8. VALIDATE FGF10/FGFR2 AS POSITIVE CONTROL
+   - Should rank highly in both species
+   - If not, troubleshoot data processing or model
+
+
+================================================================================
+KEY DIFFERENCES: MOUSE VS HUMAN
+================================================================================
+
+| Feature | Mouse | Human |
+|---------|-------|-------|
+| Gene symbols | Lowercase (Fgf10, Fgfr2) | Uppercase (FGF10, FGFR2) |
+| Epicardial markers | Same genes, check expression | TCF21 low in your datasets |
+| Time course | Available (Forte) | Limited timepoints |
+| Genetic labeling | Wt1-Cre available | Not available |
+| Dedicated isolation | Quaife-Ryan method | Not available |
+| NicheNet matrices | Use _mm suffix | Use default (human) |
+| Translation | Need validation | Direct clinical relevance |
+
+
+================================================================================
+REFERENCES
+================================================================================
+
+1. Quaife-Ryan GA, Mills RJ, et al. (2021)
+   "Single-cell transcriptomics defines heterogeneity of epicardial cells 
+   and fibroblasts within the infarcted murine heart"
+   eLife 10:e65921
+   DOI: 10.7554/eLife.65921
+
+2. Forte E, et al.
+   "Time series single cell transcriptomics of cardiac inflammation 
+   after myocardial infarction in mice"
+   GEO: GSE135310
+   ArrayExpress: E-MTAB-13147
+
+3. Farbehi N, Patrick R, et al. (2019)
+   "Single-cell expression profiling reveals dynamic flux of cardiac 
+   stromal, vascular and immune cells in health and injury"
+   eLife 8:e43882
+   DOI: 10.7554/eLife.43882
+   GEO: GSE130699
+
+================================================================================
+END OF DOCUMENT
+================================================================================

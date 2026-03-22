@@ -31,3 +31,9 @@ Thumbs.db
 .vscode/
 *.swp
 .claude/
+# Large binary files
+results/geneformer/tokenized_dataset/data-00000-of-00001.arrow
+results/geneformer/gene_token_dict.pkl
+results/geneformer/token_gene_dict.pkl
+results/classifier/classifier_model.joblib
+data/

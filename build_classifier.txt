@@ -1,0 +1,57 @@
+# Role & Objective
+You are an expert in Single-cell Computational Biology and Machine Learning.
+My project "Silico Epicardial" involves analyzing epicardial cells.
+**Goal:** Build a robust classification pipeline to distinguish between **Quiescent** (Resting) and **Activated** (EMT-undergoing) states in an scRNA-seq AnnData object.
+
+# Input Data Assumption
+- Data is an `.h5ad` file (AnnData).
+- Data is already preprocessed (QCed, normalized, log-transformed).
+- Variable names: `adata`.
+
+# Phase 1: Feature Engineering & Weak Labeling (The "Anchor" Step)
+1. **Define Gene Signatures:**
+   - Create two gene lists:
+     - `quiescent_genes`: ['Wt1', 'Upk3b', 'Msln', 'Tcf21', 'Krt19'] (Add more if available in literature).
+     - `activated_genes`: ['Tbx18', 'Snail1', 'Twist1', 'Vim', 'Fn1', 'Col1a1'].
+2. **Score Cells:**
+   - Use `scanpy.tl.score_genes` to calculate `score_quiescent` and `score_activated` for every cell.
+3. **Generate "Silver Standard" Labels:**
+   - Calculate a metric: `state_potential = score_activated - score_quiescent`.
+   - Define thresholds (e.g., top 15% and bottom 15% of the distribution).
+   - Label cells:
+     - Top 15% -> Label "Activated_Ref"
+     - Bottom 15% -> Label "Quiescent_Ref"
+     - Middle 70% -> Label "Unassigned" (This is the target for prediction).
+
+# Phase 2: Train Classifier (The "Expansion" Step)
+1. **Model Selection:** Use a **Random Forest Classifier** (robust to noise) or **L1-Regularized Logistic Regression** (for feature selection).
+2. **Training:**
+   - Train *only* on the cells labeled "Activated_Ref" and "Quiescent_Ref".
+   - Features: Use highly variable genes (HVGs), excluding cell cycle genes.
+3. **Prediction:**
+   - Apply the trained model to predict the labels of the "Unassigned" cells.
+   - Output probability scores (soft classification) to identify "Transitioning" cells.
+
+# Phase 3: Validation & QC Protocol (Strict Checking)
+Generate a report with the following checks:
+1. **Dimensionality Check:** Plot a UMAP. Color cells by the new Predicted Labels. Do the classes separate visually?
+2. **Marker Heatmap:** Generate a `sc.pl.matrixplot` or heatmap.
+   - Do Predicted "Quiescent" cells strictly express *Wt1* and *Upk3b*?
+   - Do Predicted "Activated" cells strictly express *Vim* and *Col1a1*?
+   - **FAIL CONDITION:** If >20% of "Quiescent" cells show high *Vimentin*, the classification failed.
+3. **Transition Zone Identification:** Plot the prediction probabilities histogram.
+   - Ideally, it should be bimodal (two peaks).
+   - If it is a flat uniform distribution, the boundary is too blurry.
+
+# Phase 4: Iteration Logic (The "Self-Correction" Loop)
+If the **FAIL CONDITION** in Phase 3 is met, execute the following Python logic to iterate:
+1. **Refine Features:** Run `sc.tl.rank_genes_groups` on the initial predicted labels. Identify top DE genes that are *not* in the initial gene lists.
+2. **Update Gene Lists:** Add these new discriminatory markers to the `quiescent_genes` or `activated_genes` lists.
+3. **Re-run Phase 1 & 2:** Re-calculate scores with the expanded gene lists and re-train.
+4. **Hard Mining:** If UMAP overlap persists, switch to a **Gaussian Mixture Model (GMM)** on the first 10 Principal Components (PCs) instead of gene scores to force a separation based on global variance.
+
+# Output Deliverables
+1. Python script implementing this pipeline.
+2. A summary report of the "Confusion Matrix" between the initial Weak Labels and Final Predicted Labels.
+3. A list of the top 20 "Feature Importance" genes that drove the classification (to validate biological relevance).
+
