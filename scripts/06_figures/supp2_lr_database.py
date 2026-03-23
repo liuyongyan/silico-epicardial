@@ -113,29 +113,32 @@ receptor_family = {
 lr['pathway'] = lr['receptor'].map(receptor_family).fillna('Other')
 pw_counts = lr['pathway'].value_counts()
 
-# Keep top pathways, group rest
-top_pw = pw_counts.head(10)
-if 'Other' not in top_pw.index:
-    other_count = pw_counts.iloc[10:].sum() + pw_counts.get('Other', 0)
-else:
-    other_count = pw_counts.iloc[10:].sum()
-top_pw['Other'] = top_pw.get('Other', 0) + pw_counts.iloc[10:].sum()
+# Exclude "Other" and show annotated pathways as horizontal bar chart
+annotated = pw_counts.drop('Other', errors='ignore').sort_values()
 
 pw_colors = {
     'FGF':'#E74C3C','BMP/TGFb':'#3498DB','Wnt':'#2ECC71','EGF':'#34495E',
     'Notch':'#E67E22','Ephrin':'#D35400','VEGF':'#1ABC9C','PDGF':'#F39C12',
-    'HGF':'#16A085','IGF':'#8E44AD','TAM':'#7F8C8D','Other':'#BDC3C7'
+    'HGF':'#16A085','IGF':'#8E44AD','TAM':'#7F8C8D',
 }
-colors = [pw_colors.get(pw, '#BDC3C7') for pw in top_pw.index]
+colors = [pw_colors.get(pw, '#BDC3C7') for pw in annotated.index]
 
-wedges, texts, autotexts = ax.pie(top_pw.values, labels=top_pw.index,
-                                   colors=colors, autopct='%1.0f%%',
-                                   pctdistance=0.8, startangle=90)
-for t in texts:
-    t.set_fontsize(8)
-for t in autotexts:
-    t.set_fontsize(7)
-ax.set_title('C. L-R Pairs by Pathway', fontsize=12, fontweight='bold')
+bars = ax.barh(range(len(annotated)), annotated.values, color=colors, edgecolor='white')
+ax.set_yticks(range(len(annotated)))
+ax.set_yticklabels(annotated.index, fontsize=9)
+ax.set_xlabel('Number of L-R Pairs', fontsize=10)
+
+# Add count labels
+for bar, val in zip(bars, annotated.values):
+    ax.text(bar.get_width() + 5, bar.get_y() + bar.get_height()/2,
+            str(val), va='center', fontsize=8, fontweight='bold')
+
+# Note Other count
+n_other = pw_counts.get('Other', 0)
+ax.text(0.95, 0.05, f'"Other" (unannotated): {n_other} pairs',
+        transform=ax.transAxes, fontsize=8, ha='right', color='#7F8C8D', fontstyle='italic')
+
+ax.set_title('C. L-R Pairs by Annotated Pathway', fontsize=12, fontweight='bold')
 
 plt.tight_layout()
 plt.savefig(OUTPUT_DIR / 'supp2_lr_database.png', dpi=300, bbox_inches='tight')
