@@ -165,10 +165,18 @@ for i in range(1, len(label_positions)):
     if prev_y - curr_y < min_y_gap:
         label_positions[i]['label_y'] = prev_y - min_y_gap
 
+# Manual tweaks for specific genes
+manual_tweaks = {
+    'Bmpr2': (-n_up * 0.04, y_max * 0.04),   # left-up, closer to point
+    'Egfr': (0, y_max * 0.10),                # more up
+    'Tgfbr1': (0, y_max * 0.08),              # more up, closer to point
+}
+
 for lp in label_positions:
     ax.scatter(lp['i'], lp['val'], c=lp['color'], s=60, zorder=3,
                edgecolors='black', linewidths=0.5)
-    ax.text(lp['i'] + n_up * 0.015, lp['label_y'],
+    dx, dy = manual_tweaks.get(lp['gene'], (0, 0))
+    ax.text(lp['i'] + n_up * 0.015 + dx, lp['label_y'] + dy,
             f"{lp['gene']} (#{lp['rank']})",
             fontsize=7, fontweight='bold', color=lp['color'],
             va='center', zorder=4)
