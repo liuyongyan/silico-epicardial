@@ -117,11 +117,18 @@ ax = fig.add_subplot(gs[1, 1])
 genes_to_plot = ['Fgf1', 'Fgf2', 'Fgf7', 'Fgf10', 'Fgfr2']  # Fgfr1 removed (dominates Y scale)
 genes_to_plot = [g for g in genes_to_plot if g in obs_df.columns]
 
+# Only keep cells with expression > 0
 data_q = []
 data_a = []
+pct_q = []
+pct_a = []
 for gene in genes_to_plot:
-    data_q.append(obs_df.loc[obs_df['cell_state'] == 'quiescent', gene].values)
-    data_a.append(obs_df.loc[obs_df['cell_state'] == 'activated', gene].values)
+    q_all = obs_df.loc[obs_df['cell_state'] == 'quiescent', gene]
+    a_all = obs_df.loc[obs_df['cell_state'] == 'activated', gene]
+    pct_q.append((q_all > 0).mean() * 100)
+    pct_a.append((a_all > 0).mean() * 100)
+    data_q.append(q_all[q_all > 0].values)
+    data_a.append(a_all[a_all > 0].values)
 
 x = np.arange(len(genes_to_plot))
 width = 0.35
@@ -147,21 +154,19 @@ for partname in ['cmeans', 'cmins', 'cmaxes', 'cbars']:
 ax.set_xticks(x)
 ax.set_xticklabels(genes_to_plot, fontsize=10)
 ax.set_ylabel('Expression (log1p)', fontsize=10)
-ax.set_title('D. FGF Family by Cell State (excl. Fgfr1)', fontsize=12, fontweight='bold')
+ax.set_title('D. FGF Family by Cell State (expressing cells only)', fontsize=12, fontweight='bold')
 
 from matplotlib.patches import Patch
 ax.legend([Patch(color='#3498DB', alpha=0.7), Patch(color='#E74C3C', alpha=0.7)],
           ['Quiescent', 'Activated'], fontsize=9, loc='upper left')
 
-# Annotate FGFR2
-fgfr2_idx = genes_to_plot.index('Fgfr2')
-q_mean = data_q[fgfr2_idx].mean()
-a_mean = data_a[fgfr2_idx].mean()
-ax.annotate(f'Activated\nmean={a_mean:.3f}',
-            xy=(fgfr2_idx + width/2, a_mean),
-            xytext=(fgfr2_idx + 0.7, a_mean + 0.5),
-            fontsize=7, fontweight='bold', color='#E74C3C',
-            arrowprops=dict(arrowstyle='->', color='#E74C3C', lw=1))
+# Add % expressing labels below each violin
+for i, gene in enumerate(genes_to_plot):
+    ax.text(i - width/2, -0.3, f'{pct_q[i]:.0f}%', fontsize=7, ha='center', color='#3498DB', fontweight='bold')
+    ax.text(i + width/2, -0.3, f'{pct_a[i]:.0f}%', fontsize=7, ha='center', color='#E74C3C', fontweight='bold')
+
+ax.text(len(genes_to_plot)/2, -0.6, '% of cells expressing', fontsize=8, ha='center', color='#555', style='italic')
+ax.set_ylim(-0.8, None)
 
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.png', dpi=200, bbox_inches='tight')
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.pdf', bbox_inches='tight')
