@@ -108,26 +108,30 @@ ax.tick_params(axis='y', labelsize=7)
 ax = axes[1, 0]
 
 # Get all L-R pairs from cross-species data (mouse score values)
+# Filter to ±30 range to remove extreme outliers
 scatter_data = cross[cross['m_r_score'].notna() & cross['m_l_score'].notna()].copy()
-scatter_data['m_r_c'] = np.clip(scatter_data['m_r_score'], -200, 200)
-scatter_data['m_l_c'] = np.clip(scatter_data['m_l_score'], -200, 200)
+SCORE_LIM = 60
+scatter_data = scatter_data[
+    (scatter_data['m_r_score'].abs() <= SCORE_LIM) &
+    (scatter_data['m_l_score'].abs() <= SCORE_LIM)
+].copy()
 
-ax.scatter(scatter_data['m_r_c'], scatter_data['m_l_c'],
+ax.scatter(scatter_data['m_r_score'], scatter_data['m_l_score'],
            c='#BDC3C7', s=10, alpha=0.3, zorder=1)
 
 # Highlight conserved pairs
 conserved = scatter_data[scatter_data['conservation'].str.startswith('CONSERVED', na=False)]
-ax.scatter(conserved['m_r_c'], conserved['m_l_c'],
+ax.scatter(conserved['m_r_score'], conserved['m_l_score'],
            c='#E74C3C', s=25, alpha=0.6, zorder=2, label='Conserved')
 
 # Highlight key pairs
-key_pairs = [('FGFR2','FGF10'),('BMPR2','BMP6'),('ACVR1','BMP6'),('TNFRSF12A','TNFSF12'),('ITGB1','LAMC2')]
+key_pairs = [('FGFR2','FGF10'),('BMPR2','BMP6'),('ACVR1','BMP6'),('BMPR2','BMP4'),('FGFR2','FGF16')]
 for rec_name, lig_name in key_pairs:
     row = scatter_data[(scatter_data['receptor']==rec_name) & (scatter_data['ligand']==lig_name)]
     if len(row) > 0:
         r = row.iloc[0]
         ax.annotate(f'{rec_name}/{lig_name}',
-                    (r['m_r_c'], r['m_l_c']),
+                    (r['m_r_score'], r['m_l_score']),
                     fontsize=6, fontweight='bold',
                     xytext=(8, 8), textcoords='offset points',
                     arrowprops=dict(arrowstyle='->', color='black', lw=0.5),
@@ -136,21 +140,21 @@ for rec_name, lig_name in key_pairs:
 # Quadrant labels
 ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.axvline(0, color='gray', linewidth=0.5, linestyle='--')
-ax.text(150, 150, 'Both up\n(balanced)', fontsize=7, ha='center', color='#7F8C8D')
-ax.text(-150, 150, 'R\u2193 L\u2191\n(inverse)', fontsize=7, ha='center', color='#7F8C8D')
-ax.text(-150, -150, 'Both down\n(shutdown)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(45, 45, 'Both up\n(balanced)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(-45, 45, 'R↓ L↑\n(inverse)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(-45, -45, 'Both down\n(shutdown)', fontsize=7, ha='center', color='#7F8C8D')
 
 # Q4 highlight
-ax.fill_between([0, 200], -200, 0, alpha=0.08, color='red')
-ax.text(150, -150, 'R\u2191 L\u2193\nPRIMED BUT\nSTARVED \u2605',
+ax.fill_between([0, SCORE_LIM], -SCORE_LIM, 0, alpha=0.08, color='red')
+ax.text(45, -45, 'R↑ L↓\nPRIMED BUT\nSTARVED ★',
         fontsize=8, ha='center', fontweight='bold', color='#E74C3C')
 
 ax.set_xlabel('Receptor Score (Activated vs Quiescent)', fontsize=10)
 ax.set_ylabel('Ligand Score (Activated vs Quiescent)', fontsize=10)
-ax.set_title('C. Receptor vs Ligand Score (Mouse)', fontsize=12, fontweight='bold')
+ax.set_title('C. Receptor vs Ligand Score (|score| ≤ 60)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=8)
-ax.set_xlim(-200, 200)
-ax.set_ylim(-200, 200)
+ax.set_xlim(-SCORE_LIM, SCORE_LIM)
+ax.set_ylim(-SCORE_LIM, SCORE_LIM)
 
 # ---- Panel D: Mismatch Ranking Bar Chart ----
 ax = axes[1, 1]
