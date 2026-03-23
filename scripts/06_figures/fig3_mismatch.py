@@ -124,16 +124,22 @@ conserved = scatter_data[scatter_data['conservation'].str.startswith('CONSERVED'
 ax.scatter(conserved['m_r_score'], conserved['m_l_score'],
            c='#E74C3C', s=25, alpha=0.6, zorder=2, label='Conserved')
 
-# Highlight key pairs
-key_pairs = [('FGFR2','FGF10'),('BMPR2','BMP6'),('ACVR1','BMP6'),('BMPR2','BMP4'),('FGFR2','FGF16')]
-for rec_name, lig_name in key_pairs:
+# Highlight key pairs with manual offsets to avoid overlap
+key_pairs = [
+    ('FGFR2',  'FGF10', (15, -15)),
+    ('FGFR2',  'FGF16', (-60, -25)),
+    ('BMPR2',  'BMP6',  (8, 12)),
+    ('ACVR1',  'BMP6',  (-70, -15)),
+    ('BMPR2',  'BMP4',  (-70, 8)),
+]
+for rec_name, lig_name, offset in key_pairs:
     row = scatter_data[(scatter_data['receptor']==rec_name) & (scatter_data['ligand']==lig_name)]
     if len(row) > 0:
         r = row.iloc[0]
         ax.annotate(f'{rec_name}/{lig_name}',
                     (r['m_r_score'], r['m_l_score']),
                     fontsize=6, fontweight='bold',
-                    xytext=(8, 8), textcoords='offset points',
+                    xytext=offset, textcoords='offset points',
                     arrowprops=dict(arrowstyle='->', color='black', lw=0.5),
                     zorder=3)
 
