@@ -259,8 +259,8 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 
 ![Figure 5](results/figures/fig5_cross_species.png)
 
-- **Panel A**: Mouse vs Human receptor Wilcoxon score scatter. Red points = receptors upregulated in both species. Key conserved receptors labeled (FGFR2, EPHA7, TYRO3, NOTCH1, etc.).
-- **Panel B**: Conservation heatmap for top 20 conserved pairs. Columns: Mouse Receptor Score, Mouse Ligand Score, Human Receptor Score, Human Ligand Score. Red=up, blue=down. Pattern: mouse shows strong signal, human shows same direction but weaker.
+- **Panel A**: Mouse vs Human receptor effect size scatter using rank-biserial correlation (r = z/√N), a sample-size-independent effect size measure (Rosenthal 1994). This corrects for the 5.6× difference in total cell counts between mouse (N=112,676) and human (N=20,007) which inflates raw z-scores. X-axis: mouse r (±0.2), Y-axis: human r (±0.1). Red points = receptors upregulated in both species. Key conserved receptors labeled (FGFR2, BMPR2, ACVR1, NOTCH1, etc.). Most points fall below the diagonal, indicating mouse effects are systematically larger than human — consistent with the single-patient limitation of human MI data.
+- **Panel B**: Conservation heatmap for top 20 conserved pairs, also using rank-biserial r. Same color scale (±0.3) for both species enables direct visual comparison. Mouse columns show deeper colors (larger effect sizes); human columns show lighter but directionally consistent colors — the "primed but starved" pattern is conserved in direction but attenuated in magnitude in human.
 - **Panel C**: Venn diagram showing overlap of mismatch pairs between species. 206 mouse-only, 407 human-only, 81 conserved.
 - **Panel D**: Top 10 therapeutic targets table (fully automated score-based scoring) with rank, score, conservation status, druggability, and pathway.
 
