@@ -31,8 +31,13 @@ ax = axes[0, 0]
 
 # Get unique receptors with both species data
 receptors = cross.drop_duplicates(subset='receptor')[['receptor', 'm_r_score', 'h_r_score']].dropna()
-receptors['m_r_c'] = np.clip(receptors['m_r_score'], -200, 200)
-receptors['h_r_c'] = np.clip(receptors['h_r_score'], -20, 20)
+LIM_5A = 15
+receptors = receptors[
+    (receptors['m_r_score'].abs() <= LIM_5A) &
+    (receptors['h_r_score'].abs() <= LIM_5A)
+].copy()
+receptors['m_r_c'] = receptors['m_r_score']
+receptors['h_r_c'] = receptors['h_r_score']
 
 ax.scatter(receptors['m_r_c'], receptors['h_r_c'],
            c='#BDC3C7', s=15, alpha=0.4, zorder=1)
@@ -42,23 +47,47 @@ both_up = receptors[(receptors['m_r_score'] > 0) & (receptors['h_r_score'] > 0)]
 ax.scatter(both_up['m_r_c'], both_up['h_r_c'],
            c='#E74C3C', s=25, alpha=0.6, zorder=2, label=f'Both up (n={len(both_up)})')
 
-# Annotate key receptors
-for gene in ['FGFR2','BMPR2','ACVR1','EPHA7','TYRO3','NOTCH1','EDNRA','LRP6','INSR']:
+# Annotate key conserved upregulated receptors with manual offsets
+key_labels = [
+    ('FGFR2',  (5, -12)),
+    ('BMPR2',  (-45, 8)),   # outside range, won't show — skip handled below
+    ('ACVR1',  (-40, 8)),
+    ('NOTCH1', (5, 5)),
+    ('IL2RG',  (-40, -10)),
+    ('IL1RL2', (5, -12)),
+    ('FGFR2',  (5, -12)),
+    ('FZD1',   (-30, 8)),
+]
+labeled = set()
+for gene, offset in key_labels:
+    if gene in labeled:
+        continue
     row = receptors[receptors['receptor'] == gene]
     if len(row) > 0:
         r = row.iloc[0]
         if r['m_r_score'] > 0 and r['h_r_score'] > 0:
+            ax.scatter(r['m_r_c'], r['h_r_c'], c='darkred', s=50, zorder=3,
+                       edgecolors='black', linewidths=0.5)
             ax.annotate(gene, (r['m_r_c'], r['h_r_c']),
-                        fontsize=7, fontweight='bold',
-                        xytext=(5, 5), textcoords='offset points',
-                        arrowprops=dict(arrowstyle='-', color='black', lw=0.5))
+                        fontsize=7, fontweight='bold', color='darkred',
+                        xytext=offset, textcoords='offset points',
+                        arrowprops=dict(arrowstyle='->', color='darkred', lw=0.8),
+                        zorder=4)
+            labeled.add(gene)
+
+# Highlight Q1 (both upregulated) region
+ax.fill_between([0, LIM_5A], 0, LIM_5A, alpha=0.05, color='red')
+ax.text(LIM_5A*0.7, LIM_5A*0.8, 'Conserved\nupregulated', fontsize=7,
+        ha='center', color='#C0392B', fontstyle='italic')
 
 ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.axvline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.set_xlabel('Mouse Receptor Score', fontsize=10)
 ax.set_ylabel('Human Receptor Score', fontsize=10)
-ax.set_title('A. Receptor Score: Mouse vs Human', fontsize=12, fontweight='bold')
+ax.set_title('A. Receptor Score: Mouse vs Human (|score| ≤ 15)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=8)
+ax.set_xlim(-LIM_5A, LIM_5A)
+ax.set_ylim(-LIM_5A, LIM_5A)
 
 # ---- Panel B: Conservation Heatmap (using scores) ----
 ax = axes[0, 1]
