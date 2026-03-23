@@ -2,8 +2,8 @@
 """
 Figure 5: Cross-Species Conservation
 
-Panel A: Mouse vs Human logFC Scatter (receptors)
-Panel B: Conservation Heatmap (top 20 pairs)
+Panel A: Mouse vs Human Score Scatter (receptors)
+Panel B: Conservation Heatmap (top 20 pairs, Wilcoxon scores)
 Panel C: Venn Diagram (mouse-only / human-only / conserved)
 Panel D: Final Prioritized Targets Table
 """
@@ -20,25 +20,25 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 OUTPUT_DIR = PROJECT_DIR / "results" / "figures"
 
-# Load data
-cross = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "cross_species_lr_mismatch.csv")
-targets = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "therapeutic_targets_corrected.csv")
+# Load score-based data
+cross = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "cross_species_lr_mismatch_scores.csv")
+targets = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "therapeutic_targets_scores.csv")
 
 fig, axes = plt.subplots(2, 2, figsize=(16, 14))
 
-# ---- Panel A: Mouse vs Human Receptor logFC Scatter ----
+# ---- Panel A: Mouse vs Human Receptor Score Scatter ----
 ax = axes[0, 0]
 
 # Get unique receptors with both species data
-receptors = cross.drop_duplicates(subset='receptor')[['receptor', 'm_r_lfc', 'h_r_lfc']].dropna()
-receptors['m_r_c'] = np.clip(receptors['m_r_lfc'], -15, 15)
-receptors['h_r_c'] = np.clip(receptors['h_r_lfc'], -5, 5)
+receptors = cross.drop_duplicates(subset='receptor')[['receptor', 'm_r_score', 'h_r_score']].dropna()
+receptors['m_r_c'] = np.clip(receptors['m_r_score'], -200, 200)
+receptors['h_r_c'] = np.clip(receptors['h_r_score'], -20, 20)
 
 ax.scatter(receptors['m_r_c'], receptors['h_r_c'],
            c='#BDC3C7', s=15, alpha=0.4, zorder=1)
 
 # Highlight: both upregulated
-both_up = receptors[(receptors['m_r_lfc'] > 0) & (receptors['h_r_lfc'] > 0)]
+both_up = receptors[(receptors['m_r_score'] > 0) & (receptors['h_r_score'] > 0)]
 ax.scatter(both_up['m_r_c'], both_up['h_r_c'],
            c='#E74C3C', s=25, alpha=0.6, zorder=2, label=f'Both up (n={len(both_up)})')
 
@@ -47,7 +47,7 @@ for gene in ['FGFR2','BMPR2','ACVR1','EPHA7','TYRO3','NOTCH1','EDNRA','LRP6','IN
     row = receptors[receptors['receptor'] == gene]
     if len(row) > 0:
         r = row.iloc[0]
-        if r['m_r_lfc'] > 0 and r['h_r_lfc'] > 0:
+        if r['m_r_score'] > 0 and r['h_r_score'] > 0:
             ax.annotate(gene, (r['m_r_c'], r['h_r_c']),
                         fontsize=7, fontweight='bold',
                         xytext=(5, 5), textcoords='offset points',
@@ -55,36 +55,33 @@ for gene in ['FGFR2','BMPR2','ACVR1','EPHA7','TYRO3','NOTCH1','EDNRA','LRP6','IN
 
 ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.axvline(0, color='gray', linewidth=0.5, linestyle='--')
-ax.set_xlabel('Mouse Receptor logFC', fontsize=10)
-ax.set_ylabel('Human Receptor logFC', fontsize=10)
-ax.set_title('A. Receptor logFC: Mouse vs Human', fontsize=12, fontweight='bold')
+ax.set_xlabel('Mouse Receptor Score', fontsize=10)
+ax.set_ylabel('Human Receptor Score', fontsize=10)
+ax.set_title('A. Receptor Score: Mouse vs Human', fontsize=12, fontweight='bold')
 ax.legend(fontsize=8)
 
-# ---- Panel B: Conservation Heatmap ----
+# ---- Panel B: Conservation Heatmap (using scores) ----
 ax = axes[0, 1]
 
-# Top 20 conserved canonical pairs (by avg mismatch, family-matched)
+# Top 20 conserved pairs (by avg mismatch score)
 conserved = cross[cross['conservation'].str.startswith('CONSERVED', na=False)].copy()
-conserved['avg_mm'] = (
-    np.clip(conserved['m_r_lfc'].fillna(0), 0, 10) - np.clip(conserved['m_l_lfc'].fillna(0), -10, 0) +
-    np.clip(conserved['h_r_lfc'].fillna(0), 0, 10) - np.clip(conserved['h_l_lfc'].fillna(0), -10, 0)
-) / 2
+conserved['avg_mm'] = conserved['avg_mismatch_score'].astype(float)
 conserved = conserved.sort_values('avg_mm', ascending=False)
 
 top20 = conserved.head(20).copy()
 top20['pair'] = top20['receptor'] + '/' + top20['ligand']
 
-# Build heatmap data
+# Build heatmap data using scores
 hm_data = pd.DataFrame({
-    'Mouse R': np.clip(top20['m_r_lfc'], -10, 10).values,
-    'Mouse L': np.clip(top20['m_l_lfc'], -10, 10).values,
-    'Human R': np.clip(top20['h_r_lfc'], -5, 5).values,
-    'Human L': np.clip(top20['h_l_lfc'], -5, 5).values,
+    'Mouse R': np.clip(top20['m_r_score'].astype(float), -100, 100).values,
+    'Mouse L': np.clip(top20['m_l_score'].astype(float), -100, 100).values,
+    'Human R': np.clip(top20['h_r_score'].astype(float), -20, 20).values,
+    'Human L': np.clip(top20['h_l_score'].astype(float), -20, 20).values,
 }, index=top20['pair'].values)
 
-sns.heatmap(hm_data, cmap='RdBu_r', center=0, vmin=-10, vmax=10,
+sns.heatmap(hm_data, cmap='RdBu_r', center=0, vmin=-100, vmax=100,
             annot=True, fmt='.1f', annot_kws={'fontsize': 7},
-            ax=ax, cbar_kws={'shrink': 0.6, 'label': 'logFC'})
+            ax=ax, cbar_kws={'shrink': 0.6, 'label': 'Wilcoxon Score'})
 ax.set_title('B. Conservation Heatmap (Top 20)', fontsize=12, fontweight='bold')
 ax.tick_params(axis='y', labelsize=7)
 
@@ -116,7 +113,7 @@ ax.set_title('C. Cross-Species Mismatch Overlap', fontsize=12, fontweight='bold'
 # ---- Panel D: Final Targets Table ----
 ax = axes[1, 1]
 ax.axis('off')
-ax.set_title('D. Top 10 Therapeutic Targets (Automated)', fontsize=12, fontweight='bold')
+ax.set_title('D. Top 10 Therapeutic Targets (Score-Based)', fontsize=12, fontweight='bold')
 
 top10 = targets.head(10)
 table_data = []
@@ -126,7 +123,7 @@ for i, (_, r) in enumerate(top10.iterrows()):
         f"{r['receptor']}/{r['ligand']}",
         f"{r['priority_score']:.3f}",
         r['conservation'].replace('CONSERVED_', '').replace('mouse_only', 'mouse'),
-        f"{r['druggability_corrected']:.2f}",
+        f"{r['druggability']:.2f}",
         r.get('pathway', ''),
     ])
 

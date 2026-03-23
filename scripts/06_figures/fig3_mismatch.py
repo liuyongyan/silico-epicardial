@@ -3,9 +3,9 @@
 Figure 3: "Primed But Starved" Ligand-Receptor Mismatch
 
 Panel A: Concept Diagram (schematic)
-Panel B: Heatmap - Top Mismatch Pairs (mouse)
-Panel C: Scatter Plot - Receptor vs Ligand logFC (quadrant plot)
-Panel D: Mismatch Score Ranking (top 20 pairs)
+Panel B: Heatmap - Top Mismatch Pairs (mouse, Wilcoxon scores)
+Panel C: Scatter Plot - Receptor vs Ligand Score (quadrant plot)
+Panel D: Mismatch Score Ranking (top 20 pairs, score-based composite)
 """
 
 import pandas as pd
@@ -20,18 +20,18 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 OUTPUT_DIR = PROJECT_DIR / "results" / "figures"
 
-# Load data
-mismatch = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "mouse_lr_mismatch_refined.csv")
-cross = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "cross_species_lr_mismatch.csv")
+# Load score-based data
+mismatch = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "mouse_lr_mismatch_scores.csv")
+cross = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "cross_species_lr_mismatch_scores.csv")
 
 # Load full mouse DEG for the scatter plot
 deg = pd.read_csv(PROJECT_DIR / "results" / "mouse" / "quaife_ryan_de_activated_vs_quiescent.csv")
-deg = deg.dropna(subset=['logfoldchanges'])
+deg = deg.dropna(subset=['scores'])
 
 # Pathway colors
 pw_colors = {
     'FGF':'#E74C3C','BMP':'#3498DB','BMP/Activin':'#2980B9','Wnt':'#2ECC71',
-    'TGF-β':'#9B59B6','EGF':'#34495E','Notch':'#E67E22','Sema':'#1ABC9C',
+    'TGF-\u03b2':'#9B59B6','EGF':'#34495E','Notch':'#E67E22','Sema':'#1ABC9C',
     'Sema/VEGF':'#27AE60','IGF':'#8E44AD','Other':'#95A5A6'
 }
 
@@ -46,71 +46,71 @@ ax.set_title('A. "Primed But Starved" Hypothesis', fontsize=12, fontweight='bold
 
 # Normal
 ax.text(2.5, 9.2, 'NORMAL', fontsize=11, ha='center', fontweight='bold', color='#2C3E50')
-ax.text(2.5, 8.2, 'Ligand ●●●●●', fontsize=9, ha='center', family='monospace', color='#27AE60')
-ax.text(2.5, 7.4, '↓', fontsize=14, ha='center', color='gray')
-ax.text(2.5, 6.6, 'Receptor ▢▢▢', fontsize=9, ha='center', family='monospace', color='#3498DB')
-ax.text(2.5, 5.8, '↓', fontsize=14, ha='center', color='gray')
-ax.text(2.5, 5.0, 'Signal ████', fontsize=9, ha='center', family='monospace', color='#2ECC71')
+ax.text(2.5, 8.2, 'Ligand \u25cf\u25cf\u25cf\u25cf\u25cf', fontsize=9, ha='center', family='monospace', color='#27AE60')
+ax.text(2.5, 7.4, '\u2193', fontsize=14, ha='center', color='gray')
+ax.text(2.5, 6.6, 'Receptor \u25a2\u25a2\u25a2', fontsize=9, ha='center', family='monospace', color='#3498DB')
+ax.text(2.5, 5.8, '\u2193', fontsize=14, ha='center', color='gray')
+ax.text(2.5, 5.0, 'Signal \u2588\u2588\u2588\u2588', fontsize=9, ha='center', family='monospace', color='#2ECC71')
 ax.text(2.5, 4.0, 'Quiescent', fontsize=10, ha='center', style='italic', color='#7F8C8D')
 
 # Post-MI
 ax.text(7.5, 9.2, 'POST-MI', fontsize=11, ha='center', fontweight='bold', color='#E74C3C')
-ax.text(7.5, 8.2, 'Ligand ●●', fontsize=9, ha='center', family='monospace', color='#E74C3C')
+ax.text(7.5, 8.2, 'Ligand \u25cf\u25cf', fontsize=9, ha='center', family='monospace', color='#E74C3C')
 ax.text(7.5, 7.8, '(depleted)', fontsize=7, ha='center', color='#E74C3C')
-ax.text(7.5, 7.0, '↓', fontsize=14, ha='center', color='gray')
-ax.text(7.5, 6.2, 'Receptor ▢▢▢▢▢▢▢', fontsize=9, ha='center', family='monospace', color='#3498DB')
+ax.text(7.5, 7.0, '\u2193', fontsize=14, ha='center', color='gray')
+ax.text(7.5, 6.2, 'Receptor \u25a2\u25a2\u25a2\u25a2\u25a2\u25a2\u25a2', fontsize=9, ha='center', family='monospace', color='#3498DB')
 ax.text(7.5, 5.8, '(upregulated)', fontsize=7, ha='center', color='#3498DB')
-ax.text(7.5, 5.0, '↓', fontsize=14, ha='center', color='gray')
-ax.text(7.5, 4.2, 'Signal ██', fontsize=9, ha='center', family='monospace', color='#F39C12')
+ax.text(7.5, 5.0, '\u2193', fontsize=14, ha='center', color='gray')
+ax.text(7.5, 4.2, 'Signal \u2588\u2588', fontsize=9, ha='center', family='monospace', color='#F39C12')
 ax.text(7.5, 3.6, '(insufficient)', fontsize=7, ha='center', color='#F39C12')
 
 # Therapeutic strategy
 ax.annotate('', xy=(7.5, 2.5), xytext=(2.5, 2.5),
             arrowprops=dict(arrowstyle='->', color='#8E44AD', lw=2))
 ax.text(5.0, 2.8, 'THERAPEUTIC STRATEGY', fontsize=8, ha='center', fontweight='bold', color='#8E44AD')
-ax.text(5.0, 1.8, 'Deliver depleted ligands\n→ engage upregulated receptors\n→ enhanced activation',
+ax.text(5.0, 1.8, 'Deliver depleted ligands\n\u2192 engage upregulated receptors\n\u2192 enhanced activation',
         fontsize=8, ha='center', color='#8E44AD')
 
 # Example
-ax.text(5.0, 0.6, 'Example: FGF10 (↓) + FGFR2 (↑) → Deliver FGF10',
+ax.text(5.0, 0.6, 'Example: FGF10 (\u2193) + FGFR2 (\u2191) \u2192 Deliver FGF10',
         fontsize=8, ha='center', fontweight='bold', color='#2C3E50',
         bbox=dict(boxstyle='round,pad=0.3', facecolor='#FDEBD0', edgecolor='#E67E22'))
 
-# ---- Panel B: Heatmap - Top Pairs ----
+# ---- Panel B: Heatmap - Top Pairs (using Wilcoxon scores) ----
 ax = axes[0, 1]
 
-# Select top 20 pairs from refined analysis, diverse pathways
+# Select top 25 pairs from score-based analysis
 top_pairs = mismatch.head(25).copy()
 top_pairs['pair'] = top_pairs['receptor'] + '/' + top_pairs['ligand']
-top_pairs['r_logfc_c'] = np.clip(top_pairs['r_logfc'], -10, 10)
-top_pairs['l_logfc_c'] = np.clip(top_pairs['l_logfc'], -10, 10)
+top_pairs['r_score_c'] = np.clip(top_pairs['r_score'], -100, 100)
+top_pairs['l_score_c'] = np.clip(top_pairs['l_score'], -100, 100)
 
 # Also add FGFR2/FGF10 if not in top 25
 fgf10_pair = mismatch[(mismatch['receptor']=='Fgfr2') & (mismatch['ligand']=='Fgf10')]
 if len(fgf10_pair) > 0 and 'Fgfr2/Fgf10' not in top_pairs['pair'].values:
     fgf10_pair = fgf10_pair.copy()
     fgf10_pair['pair'] = 'Fgfr2/Fgf10'
-    fgf10_pair['r_logfc_c'] = np.clip(fgf10_pair['r_logfc'], -10, 10)
-    fgf10_pair['l_logfc_c'] = np.clip(fgf10_pair['l_logfc'], -10, 10)
+    fgf10_pair['r_score_c'] = np.clip(fgf10_pair['r_score'], -100, 100)
+    fgf10_pair['l_score_c'] = np.clip(fgf10_pair['l_score'], -100, 100)
     top_pairs = pd.concat([top_pairs, fgf10_pair])
 
-heatmap_data = top_pairs[['pair', 'r_logfc_c', 'l_logfc_c', 'composite']].set_index('pair')
-heatmap_data.columns = ['Receptor\nlogFC', 'Ligand\nlogFC', 'Composite\nScore']
+heatmap_data = top_pairs[['pair', 'r_score_c', 'l_score_c', 'composite']].set_index('pair')
+heatmap_data.columns = ['Receptor\nScore', 'Ligand\nScore', 'Composite\nScore']
 
-sns.heatmap(heatmap_data[['Receptor\nlogFC', 'Ligand\nlogFC']],
-            cmap='RdBu_r', center=0, vmin=-10, vmax=10,
+sns.heatmap(heatmap_data[['Receptor\nScore', 'Ligand\nScore']],
+            cmap='RdBu_r', center=0, vmin=-100, vmax=100,
             annot=True, fmt='.1f', annot_kws={'fontsize': 7},
-            ax=ax, cbar_kws={'shrink': 0.6, 'label': 'logFC'})
+            ax=ax, cbar_kws={'shrink': 0.6, 'label': 'Wilcoxon Score'})
 ax.set_title('B. Top Mismatch Pairs (Mouse)', fontsize=12, fontweight='bold')
 ax.tick_params(axis='y', labelsize=7)
 
-# ---- Panel C: Scatter - Receptor vs Ligand logFC ----
+# ---- Panel C: Scatter - Receptor vs Ligand Score ----
 ax = axes[1, 0]
 
-# Get all L-R pairs from cross-species data (mouse values)
-scatter_data = cross[cross['m_r_lfc'].notna() & cross['m_l_lfc'].notna()].copy()
-scatter_data['m_r_c'] = np.clip(scatter_data['m_r_lfc'], -15, 15)
-scatter_data['m_l_c'] = np.clip(scatter_data['m_l_lfc'], -15, 15)
+# Get all L-R pairs from cross-species data (mouse score values)
+scatter_data = cross[cross['m_r_score'].notna() & cross['m_l_score'].notna()].copy()
+scatter_data['m_r_c'] = np.clip(scatter_data['m_r_score'], -200, 200)
+scatter_data['m_l_c'] = np.clip(scatter_data['m_l_score'], -200, 200)
 
 ax.scatter(scatter_data['m_r_c'], scatter_data['m_l_c'],
            c='#BDC3C7', s=10, alpha=0.3, zorder=1)
@@ -121,7 +121,7 @@ ax.scatter(conserved['m_r_c'], conserved['m_l_c'],
            c='#E74C3C', s=25, alpha=0.6, zorder=2, label='Conserved')
 
 # Highlight key pairs
-key_pairs = [('FGFR2','FGF10'),('BMPR2','BMP4'),('ACVR1','BMP6'),('TYRO3','GAS6'),('EPHA7','EFNA2')]
+key_pairs = [('FGFR2','FGF10'),('BMPR2','BMP6'),('ACVR1','BMP6'),('TNFRSF12A','TNFSF12'),('ITGB1','LAMC2')]
 for rec_name, lig_name in key_pairs:
     row = scatter_data[(scatter_data['receptor']==rec_name) & (scatter_data['ligand']==lig_name)]
     if len(row) > 0:
@@ -136,26 +136,26 @@ for rec_name, lig_name in key_pairs:
 # Quadrant labels
 ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.axvline(0, color='gray', linewidth=0.5, linestyle='--')
-ax.text(12, 12, 'Both up\n(balanced)', fontsize=7, ha='center', color='#7F8C8D')
-ax.text(-12, 12, 'R↓ L↑\n(inverse)', fontsize=7, ha='center', color='#7F8C8D')
-ax.text(-12, -12, 'Both down\n(shutdown)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(150, 150, 'Both up\n(balanced)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(-150, 150, 'R\u2193 L\u2191\n(inverse)', fontsize=7, ha='center', color='#7F8C8D')
+ax.text(-150, -150, 'Both down\n(shutdown)', fontsize=7, ha='center', color='#7F8C8D')
 
 # Q4 highlight
-ax.fill_between([0, 15], -15, 0, alpha=0.08, color='red')
-ax.text(12, -12, 'R↑ L↓\nPRIMED BUT\nSTARVED ★',
+ax.fill_between([0, 200], -200, 0, alpha=0.08, color='red')
+ax.text(150, -150, 'R\u2191 L\u2193\nPRIMED BUT\nSTARVED \u2605',
         fontsize=8, ha='center', fontweight='bold', color='#E74C3C')
 
-ax.set_xlabel('Receptor logFC (Activated vs Quiescent)', fontsize=10)
-ax.set_ylabel('Ligand logFC (Activated vs Quiescent)', fontsize=10)
-ax.set_title('C. Receptor vs Ligand logFC (Mouse)', fontsize=12, fontweight='bold')
+ax.set_xlabel('Receptor Score (Activated vs Quiescent)', fontsize=10)
+ax.set_ylabel('Ligand Score (Activated vs Quiescent)', fontsize=10)
+ax.set_title('C. Receptor vs Ligand Score (Mouse)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=8)
-ax.set_xlim(-15, 15)
-ax.set_ylim(-15, 15)
+ax.set_xlim(-200, 200)
+ax.set_ylim(-200, 200)
 
 # ---- Panel D: Mismatch Ranking Bar Chart ----
 ax = axes[1, 1]
 
-# Top 20 from refined analysis
+# Top 20 from score-based analysis
 top20 = mismatch.head(20).copy()
 
 # Add FGFR2/FGF10 if not in top 20
@@ -180,8 +180,8 @@ for i, (_, row) in enumerate(top20.iterrows()):
 
 ax.set_yticks(range(len(top20)))
 ax.set_yticklabels(top20['pair'], fontsize=7)
-ax.set_xlabel('Composite Mismatch Score', fontsize=10)
-ax.set_title('D. Top Mismatch Pairs (Refined Score)', fontsize=12, fontweight='bold')
+ax.set_xlabel('Composite Mismatch Score (Score-Based)', fontsize=10)
+ax.set_title('D. Top Mismatch Pairs (Score-Based)', fontsize=12, fontweight='bold')
 
 # Legend for pathways
 from matplotlib.patches import Patch

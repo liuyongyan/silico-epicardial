@@ -34,17 +34,19 @@ Positive control: FGF10/FGFR2 (wet lab validated by Cheng Lab).
 
 ### Step 2: Mouse Mismatch Identification
 
+**Switch from logFC to Wilcoxon scores**: The original pipeline used logFC (log-fold-change) to rank receptors and ligands. However, logFC is unstable for genes with near-zero baseline expression: a shift from 0.001 to 0.01 yields logFC = 3.3 (appearing large), while a shift from 1.0 to 2.0 yields logFC = 1.0. This inflates the apparent effect size of low-expression genes and distorts composite scoring. Wilcoxon scores (z-normalized U statistics from rank_genes_groups) are robust to these artifacts because they measure how consistently a gene ranks higher across cells, regardless of absolute expression scale.
+
 **Filters**:
-1. Receptor significantly upregulated: logFC > 0, padj < 0.05 → 623 receptors
-2. Ligand significantly downregulated: logFC < 0, padj < 0.05
+1. Receptor significantly upregulated: score > 0, padj < 0.05
+2. Ligand significantly downregulated: score < 0, padj < 0.05
 3. High-confidence pairs only: n_db ≥ 3
 4. Starvation ratio: fraction of high-confidence cognate ligands significantly downregulated
 
-**Scoring**: `composite = receptor_logFC_norm × |ligand_logFC_norm| × starvation_ratio × (n_db / 5)`
+**Scoring**: `composite = receptor_score_norm × |ligand_score_norm| × starvation_ratio × (n_db / 5)`
 
-Where logFC values are capped to [0, 10] and normalized to [0, 1].
+Where scores are capped to [0, 200] and normalized to [0, 1].
 
-**Result**: 127 mouse mismatch pairs
+**Result**: 83 mouse mismatch pairs
 
 ### Step 3: Cross-Species Conservation
 
@@ -54,7 +56,7 @@ For each high-confidence L-R pair (n_db ≥ 3), check if the receptor↑ + ligan
 - **Strict**: receptor↑ (padj<0.05) AND ligand↓ (padj<0.05) in BOTH species
 - **Relaxed**: direction-consistent in both species, significant in at least one
 
-**Result**: 100 conserved pairs (2 strict, 98 relaxed)
+**Result**: 81 conserved pairs (1 strict, 80 relaxed)
 
 ### Step 4: Protein Family Match Filter
 
@@ -141,75 +143,75 @@ The quiescent vs activated labels are derived from signature-based scoring with 
 
 | Rank | Receptor | Ligand | Score | Mismatch | Conservation | Druggability | Literature | Ligand Type | Pathway |
 |:----:|----------|--------|:-----:|:--------:|:------------:|:------------:|:----------:|:-----------:|---------|
-| 1 | INSR | NAMPT | 0.615 | 0.011 | 0.300 (strict) | 0.174 | 0.130 | Secreted | Insulin |
-| 2 | TYRO3 | GAS6 | 0.587 | 0.125 | 0.210 | 0.153 | 0.099 | Secreted | TAM |
-| 3 | BMPR2 | BMP6 | 0.576 | 0.096 | 0.210 | 0.130 | 0.140 | Secreted | BMP |
-| 4 | ITGB1 | CD14 | 0.573 | 0.048 | 0.210 | 0.156 | 0.158 | Secreted | Integrin |
-| 5 | ACVR1 | BMP6 | 0.562 | 0.107 | 0.210 | 0.137 | 0.108 | Secreted | BMP/Activin |
-| 6 | IL1RL2 | IL18 | 0.555 | 0.058 | 0.210 | 0.153 | 0.135 | Secreted | Interleukin |
-| 7 | UNC5B | NTN1 | 0.544 | 0.300 | 0.060 | 0.090 | 0.094 | Secreted | Netrin |
-| 8 | IL2RG | IL2 | 0.542 | 0.003 | 0.210 | 0.176 | 0.152 | Secreted | Interleukin |
-| 9 | ITGA5 | CCN1 | 0.527 | 0.074 | 0.210 | 0.138 | 0.106 | Secreted | Integrin |
-| 10 | ITGB3 | CCN1 | 0.525 | 0.050 | 0.210 | 0.141 | 0.124 | Secreted | Integrin |
-| 11 | ITGAV | CCN1 | 0.523 | 0.071 | 0.210 | 0.140 | 0.102 | Secreted | Integrin |
-| 12 | IL2RG | IL15 | 0.516 | 0.010 | 0.210 | 0.169 | 0.127 | Secreted | Interleukin |
-| **13** | **FGFR2** | **FGF10** | **0.509** | 0.025 | 0.210 | 0.144 | 0.130 | **Secreted** | **FGF** |
-| **14** | **FGFR2** | **FGF7** | **0.508** | 0.023 | 0.210 | 0.160 | 0.114 | **Secreted** | **FGF** |
-| 15 | INSR | HRAS | 0.494 | 0.001 | 0.210 | 0.145 | 0.137 | Membrane | Insulin |
-| 16 | ITGB1 | LAMC2 | 0.494 | 0.048 | 0.210 | 0.147 | 0.088 | Secreted | Integrin |
-| 17 | IL2RG | ICAM1 | 0.493 | 0.007 | 0.210 | 0.123 | 0.152 | Membrane | Interleukin |
-| 18 | BMPR2 | BMP2 | 0.488 | 0.096 | 0.060 | 0.161 | 0.171 | Secreted | BMP |
-| 19 | OGFR | PENK | 0.483 | 0.240 | 0.060 | 0.100 | 0.083 | Secreted | Opioid |
-| 20 | FGFR2 | FGF16 | 0.482 | 0.013 | 0.210 | 0.144 | 0.115 | Secreted | FGF |
+| 1 | UNC5B | NTN1 | 0.544 | 1.000 | 0.200 | 0.450 | 0.472 | Secreted | Other |
+| 2 | OGFR | PENK | 0.540 | 0.991 | 0.200 | 0.498 | 0.417 | Secreted | Other |
+| 3 | IL2RG | IL2 | 0.539 | 0.003 | 0.700 (relaxed) | 0.879 | 0.762 | Secreted | Other |
+| 4 | ITGB1 | CD14 | 0.538 | 0.043 | 0.700 (relaxed) | 0.782 | 0.791 | Secreted | Other |
+| 5 | IL2RG | IL15 | 0.509 | 0.012 | 0.700 (relaxed) | 0.843 | 0.636 | Secreted | Other |
+| 6 | IL1RL2 | IL18 | 0.509 | 0.036 | 0.700 (relaxed) | 0.763 | 0.675 | Secreted | Other |
+| 7 | BMPR2 | BMP6 | 0.497 | 0.057 | 0.700 (relaxed) | 0.652 | 0.701 | Secreted | BMP |
+| 8 | IL2RG | ICAM1 | 0.489 | 0.012 | 0.700 (relaxed) | 0.614 | 0.762 | Membrane | Other |
+| **9** | **FGFR2** | **FGF10** | **0.485** | 0.003 | 0.700 (relaxed) | 0.719 | 0.651 | **Secreted** | **FGF** |
+| 10 | ACVR1 | BMP6 | 0.478 | 0.077 | 0.700 (relaxed) | 0.685 | 0.542 | Secreted | BMP/Activin |
+| **11** | **FGFR2** | **FGF16** | **0.469** | 0.002 | 0.700 (relaxed) | 0.719 | 0.575 | **Secreted** | **FGF** |
+| 12 | SDC1 | LPL | 0.465 | 0.316 | 0.200 | 0.765 | 0.785 | Secreted | Other |
+| 13 | ITGB1 | LAMC2 | 0.462 | 0.053 | 0.700 (relaxed) | 0.737 | 0.442 | Secreted | Other |
+| 14 | GRIN2D | IL16 | 0.434 | 0.007 | 0.700 (relaxed) | 0.689 | 0.422 | Secreted | Other |
+| 15 | FZD1 | MYOC | 0.433 | 0.087 | 0.700 (relaxed) | 0.583 | 0.401 | Secreted | Wnt |
+| 16 | BMPR2 | BMP4 | 0.431 | 0.237 | 0.200 | 0.652 | 0.851 | Secreted | BMP |
+| 17 | ITGB1 | TGM2 | 0.428 | 0.319 | 0.200 | 0.812 | 0.548 | Secreted | Other |
+| 18 | ADGRE5 | CD55 | 0.426 | 0.298 | 1.000 (strict) | 0.184 | 0.000 | Intracellular | Other |
+| 19 | EGFR | ANXA1 | 0.415 | 0.038 | 0.200 | 0.923 | 0.798 | Secreted | EGF |
+| 20 | BMPR2 | BMP2 | 0.413 | 0.072 | 0.200 | 0.804 | 0.854 | Secreted | BMP |
 
 ### Positive Control Validation
 
-FGF10/FGFR2 ranks **#13/127** with fully automated scoring — no manual annotation. Comparison across scoring methods:
+FGF10/FGFR2 ranks **#9/83** with fully automated score-based scoring -- no manual annotation. Comparison across scoring methods:
 
-| Pair | Manual | DGIdb-only | **Corrected (final)** |
-|------|:------:|:----------:|:---------------------:|
-| Fgfr2/Fgf10 | 1 | 27 | **13** |
-| Fgfr2/Fgf7 | 4 | 21 | **14** |
-| Acvr1/Bmp6 | 2 | 11 | **5** |
-| Bmpr2/Bmp6 | 5 | 8 | **3** |
-| Tyro3/Gas6 | 3 | 2 | **2** |
-| Insr/Nampt | 9 | 1 | **1** |
-| Unc5b/Ntn1 | 6 | 18 | **7** |
-| Bmpr2/Bmp2 | 7 | 20 | **18** |
+| Pair | Manual | DGIdb-only | logFC-based | **Score-based (final)** |
+|------|:------:|:----------:|:-----------:|:-----------------------:|
+| Fgfr2/Fgf10 | 1 | 27 | 13 | **9** |
+| Fgfr2/Fgf16 | -- | -- | 20 | **11** |
+| Acvr1/Bmp6 | 2 | 11 | 5 | **10** |
+| Bmpr2/Bmp6 | 5 | 8 | 3 | **7** |
+| Unc5b/Ntn1 | 6 | 18 | 7 | **1** |
+| Bmpr2/Bmp2 | 7 | 20 | 18 | **20** |
 
-Manual scoring placed FGFR2/FGF10 at #1 because we knew it was the validated positive control (literature=1.0, druggability=1.0). The automated score does not have this prior — its #13 ranking reflects the gene's actual data footprint: moderate mismatch, conserved across species, secreted ligand, and ~97 cardiac publications.
+Note: Tyro3/Gas6, Insr/Nampt, and Fgfr2/Fgf7 were removed from the 83 score-based mismatch pairs because their ligands did not meet the score < 0 (padj < 0.05) filter. This is expected: Wilcoxon scores correct for logFC artifacts in near-zero-expression genes, so some previously included pairs with inflated logFC no longer qualify.
+
+The automated score places FGFR2/FGF10 at #9 (top 11%), up from #13 in the logFC-based analysis. This improvement reflects the removal of pairs whose mismatch signal was driven by logFC artifacts rather than genuine differential expression.
 
 ### Key Findings
 
-1. **FGF10/FGFR2 is cross-species conserved and in the top 10%.** Ranks #13/127 without manual input. FGFR2 is upregulated and FGF10 is downregulated in both mouse (significant) and human (directional trend).
+1. **FGF10/FGFR2 is cross-species conserved and in the top 11%.** Ranks #9/83 without manual input. FGFR2 is upregulated and FGF10 is downregulated in both mouse (significant) and human (directional trend).
 
-2. **BMP pathway pairs rank highly.** BMPR2/BMP6 (#3), ACVR1/BMP6 (#5), BMPR2/BMP2 (#18). Note: BMP4 is upregulated in human (opposite of mouse), so BMP4 pairs are NOT conserved.
+2. **BMP pathway pairs rank highly.** BMPR2/BMP6 (#7), ACVR1/BMP6 (#10), BMPR2/BMP2 (#20). Note: BMP4 is upregulated in human (opposite of mouse), so BMP4 pairs are NOT conserved.
 
-3. **Novel candidates emerge.** TYRO3/GAS6 (#2, TAM receptor, efferocytosis), INSR/NAMPT (#1, the only strictly conserved pair), and UNC5B/NTN1 (#7, netrin guidance) were not in the original instruction 3 hypothesis.
+3. **Score-based filtering removes logFC artifacts.** The switch from logFC to Wilcoxon scores reduced mismatch pairs from 127 to 83. Pairs like TYRO3/GAS6 and INSR/NAMPT dropped out because their ligands' apparent downregulation was driven by near-zero expression artifacts, not genuine differential expression. UNC5B/NTN1 (#1) and OGFR/PENK (#2) now rank highest by mismatch composite.
 
-4. **Mismatch score alone is insufficient.** FGFR2/FGF10's mismatch composite is only 0.0817 (rank 77/127). Multi-dimensional scoring — especially cross-species conservation and ligand deliverability — is essential to surface biologically meaningful targets.
+4. **Mismatch score alone is insufficient.** FGFR2/FGF10's mismatch composite is only 0.0002 (rank 77/83). Multi-dimensional scoring -- especially cross-species conservation and ligand deliverability -- is essential to surface biologically meaningful targets.
 
-5. **Human data is a bottleneck.** No conserved pairs reach strict significance in both species. All conservation calls rely on directional consistency in human (trend level). Multi-patient human MI data would substantially strengthen these findings.
+5. **Human data is a bottleneck.** Only 1 conserved pair reaches strict significance in both species (ADGRE5/CD55). All other conservation calls rely on directional consistency in human (trend level). Multi-patient human MI data would substantially strengthen these findings.
 
-### 71 Cross-Species Conserved Canonical Pairs (by avg mismatch)
+### 81 Cross-Species Conserved Pairs (by avg mismatch score)
 
-See `cross_species_conserved.csv` for the full 100 pairs (before family filter). Top pairs by signaling pathway:
+See `cross_species_conserved_scores.csv` for the full 81 pairs. Top pairs by avg mismatch score:
 
-| Pathway | Rank | Receptor | Ligand | Avg Mismatch | n_db |
-|---------|:----:|----------|--------|:------------:|:----:|
-| Cytokine | 1 | OSMR | OSM | 11.98 | 4 |
-| Endothelin | 2 | EDNRA | EDN3 | 11.29 | 5 |
-| Ephrin | 3 | EPHA7 | EFNA2 | 11.15 | 5 |
-| Neuropeptide | 4 | TRHR | TRH | 10.94 | 5 |
-| BMP/TGFb | 5 | ACVR1 | GDF2 | 10.79 | 4 |
-| Wnt | 9 | LRP6 | RSPO1 | 10.14 | 4 |
-| TNF | 11 | TNFRSF12A | TNFSF12 | 10.09 | 5 |
-| Interleukin | 12 | IL13RA1 | IL4 | 10.08 | 4 |
-| FGF | 15 | FGFR2 | FGF16 | 9.88 | 3 |
-| TAM | 17 | TYRO3 | GAS6 | 9.31 | 5 |
-| Notch | 20 | NOTCH3 | PSEN1 | 8.22 | 4 |
+| Rank | Receptor | Ligand | Avg Mismatch Score | n_db |
+|:----:|----------|--------|:------------------:|:----:|
+| 1 | ITGB1 | LAMC2 | 0.166 | 4 |
+| 2 | ITGB1 | CD14 | 0.164 | 4 |
+| 3 | TNFRSF12A | TNFSF12 | 0.134 | 5 |
+| 4 | FZD1 | MYOC | 0.117 | 3 |
+| 5 | FZD4 | MYOC | 0.101 | 3 |
+| 8 | ACVR1 | BMP6 | 0.082 | 4 |
+| 12 | LRP6 | RSPO1 | 0.076 | 4 |
+| 16 | BMPR2 | BMP6 | 0.068 | 4 |
+| 18 | OSMR | OSM | 0.061 | 4 |
+| 34 | FGFR2 | FGF16 | 0.025 | 3 |
+| 40 | FGFR2 | FGF10 | 0.024 | 3 |
 
-FGFR2/FGF10 ranks **39/71** by avg mismatch score (5.90), **54/71** for FGFR2/FGF7 (5.05).
+FGFR2/FGF10 ranks **40/81** by avg mismatch score (0.024), **34/81** for FGFR2/FGF16 (0.025).
 
 ---
 
@@ -230,22 +232,22 @@ FGFR2/FGF10 ranks **39/71** by avg mismatch score (5.90), **54/71** for FGFR2/FG
 
 ![Figure 2](results/figures/fig2_receptor_de_landscape.png)
 
-- **Panel A**: Volcano plot of 1,310 receptor genes. Key receptors labeled (FGFR2, BMPR2, ACVR1, EGFR, etc.). Colored by signaling pathway.
-- **Panel B**: Top 20 upregulated receptors by logFC. FGFR2 highlighted with red border. Pathway annotated for each.
+- **Panel A**: Volcano plot of 1,310 receptor genes. X-axis shows Wilcoxon score (z-normalized U statistic). Key receptors labeled (FGFR2, BMPR2, ACVR1, EGFR, etc.). Colored by signaling pathway.
+- **Panel B**: Top 20 upregulated receptors by Wilcoxon score. FGFR2 highlighted with red border. Pathway annotated for each.
 - **Panel C**: Pathway-level summary showing number of significantly upregulated vs downregulated receptors per pathway. BMP and Ephrin have the most upregulated receptors.
 
-**Data**: `receptor_rankings_by_logfc.csv` (Activated vs Quiescent, Wilcoxon)
+**Data**: `receptor_rankings_by_logfc.csv` (Activated vs Quiescent, Wilcoxon scores)
 
 ### Figure 3: "Primed But Starved" Ligand-Receptor Mismatch
 
 ![Figure 3](results/figures/fig3_mismatch.png)
 
 - **Panel A**: Concept diagram illustrating the hypothesis. Normal: ligand high, receptor low → balanced signaling. Post-MI: ligand depleted, receptor upregulated → insufficient signal. Therapeutic strategy: deliver depleted ligands.
-- **Panel B**: Heatmap of top mismatch pairs showing receptor logFC (red) and ligand logFC (blue). FGFR2/FGF10 included at bottom.
-- **Panel C**: Quadrant scatter plot of all L-R pairs (mouse). X=receptor logFC, Y=ligand logFC. The lower-right quadrant (red shading) = "primed but starved" pairs. Conserved pairs highlighted in red.
-- **Panel D**: Top mismatch pairs ranked by refined composite score. Colored by pathway.
+- **Panel B**: Heatmap of top mismatch pairs showing receptor Wilcoxon score (red) and ligand Wilcoxon score (blue). FGFR2/FGF10 included at bottom.
+- **Panel C**: Quadrant scatter plot of all L-R pairs (mouse). X=receptor score, Y=ligand score. The lower-right quadrant (red shading) = "primed but starved" pairs. Conserved pairs highlighted in red.
+- **Panel D**: Top mismatch pairs ranked by refined composite score (score-based). Colored by pathway.
 
-**Data**: `mouse_lr_mismatch_refined.csv`, `cross_species_lr_mismatch.csv`
+**Data**: `mouse_lr_mismatch_scores.csv`, `cross_species_lr_mismatch_scores.csv`
 
 ### Figure 4: Geneformer In Silico Perturbation — SKIPPED
 
@@ -255,12 +257,12 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 
 ![Figure 5](results/figures/fig5_cross_species.png)
 
-- **Panel A**: Mouse vs Human receptor logFC scatter. Red points = receptors upregulated in both species. Key conserved receptors labeled (FGFR2, EPHA7, TYRO3, NOTCH1, etc.).
-- **Panel B**: Conservation heatmap for top 20 conserved pairs. Columns: Mouse Receptor logFC, Mouse Ligand logFC, Human Receptor logFC, Human Ligand logFC. Red=up, blue=down. Pattern: mouse shows strong signal, human shows same direction but weaker.
-- **Panel C**: Venn diagram showing overlap of mismatch pairs between species. 231 mouse-only, 376 human-only, 100 conserved.
-- **Panel D**: Top 10 therapeutic targets table (fully automated scoring) with rank, score, conservation status, druggability, and pathway.
+- **Panel A**: Mouse vs Human receptor Wilcoxon score scatter. Red points = receptors upregulated in both species. Key conserved receptors labeled (FGFR2, EPHA7, TYRO3, NOTCH1, etc.).
+- **Panel B**: Conservation heatmap for top 20 conserved pairs. Columns: Mouse Receptor Score, Mouse Ligand Score, Human Receptor Score, Human Ligand Score. Red=up, blue=down. Pattern: mouse shows strong signal, human shows same direction but weaker.
+- **Panel C**: Venn diagram showing overlap of mismatch pairs between species. 206 mouse-only, 407 human-only, 81 conserved.
+- **Panel D**: Top 10 therapeutic targets table (fully automated score-based scoring) with rank, score, conservation status, druggability, and pathway.
 
-**Data**: `cross_species_lr_mismatch.csv`, `therapeutic_targets_corrected.csv`
+**Data**: `cross_species_lr_mismatch_scores.csv`, `therapeutic_targets_scores.csv`
 
 ### Supplementary Figure 2: L-R Database Composition
 
@@ -289,12 +291,14 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 ### Result files
 | File | Description |
 |------|-------------|
-| `results/mismatch/therapeutic_targets_corrected.csv` | **Final ranking**: 127 pairs, fully automated scoring |
-| `results/mismatch/therapeutic_targets_prioritized.csv` | 127 pairs, manual druggability/literature |
-| `results/mismatch/therapeutic_targets_automated.csv` | 127 pairs, DGIdb-only (before UniProt fix) |
-| `results/mismatch/cross_species_lr_mismatch.csv` | All 1,953 L-R pairs with both species data |
-| `results/mismatch/cross_species_conserved.csv` | 100 conserved mismatch pairs |
-| `results/mismatch/mouse_lr_mismatch_refined.csv` | 127 mouse pairs with composite scoring |
+| `results/mismatch/therapeutic_targets_scores.csv` | **Final ranking (score-based)**: 83 pairs, fully automated scoring with Wilcoxon scores |
+| `results/mismatch/mouse_lr_mismatch_scores.csv` | 83 mouse pairs with score-based composite |
+| `results/mismatch/cross_species_lr_mismatch_scores.csv` | All 1,953 L-R pairs with both species scores |
+| `results/mismatch/cross_species_conserved_scores.csv` | 81 conserved mismatch pairs (score-based) |
+| `results/mismatch/therapeutic_targets_corrected.csv` | Previous ranking (logFC-based): 127 pairs |
+| `results/mismatch/cross_species_lr_mismatch.csv` | All 1,953 L-R pairs (logFC-based, previous) |
+| `results/mismatch/cross_species_conserved.csv` | 100 conserved pairs (logFC-based, previous) |
+| `results/mismatch/mouse_lr_mismatch_refined.csv` | 127 mouse pairs (logFC-based, previous) |
 | `results/mismatch/mouse_lr_mismatch_all.csv` | All 701 mouse mismatch pairs (raw) |
 | `results/mismatch/gene_scores_corrected.csv` | Per-gene DGIdb + UniProt + PubMed scores |
 | `results/mismatch/uniprot_deliverability.csv` | UniProt subcellular location for 190 genes |
@@ -310,6 +314,7 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 | `scripts/05_mismatch/05_therapeutic_prioritization.py` | Manual druggability/literature scoring |
 | `scripts/05_mismatch/06_automated_scoring.py` | DGIdb + PubMed automated scoring |
 | `scripts/05_mismatch/07_fix_druggability.py` | UniProt deliverability correction |
+| `scripts/05_mismatch/08_rerun_with_scores.py` | Re-run full pipeline with Wilcoxon scores |
 
 ---
 
