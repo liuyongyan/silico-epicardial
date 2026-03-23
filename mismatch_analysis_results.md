@@ -222,7 +222,7 @@ FGFR2/FGF10 ranks **39/71** by avg mismatch score (5.90), **54/71** for FGFR2/FG
 - **Panel A**: UMAP of 112,676 mouse epicardial cells colored by cell state (blue=quiescent, red=activated). Subsampled to 50K for plotting.
 - **Panel B**: FGFR2 expression on UMAP. Co-localizes with activated cluster (upper right).
 - **Panel C**: FGF10 expression on UMAP. Enriched in quiescent clusters (lower left).
-- **Panel D**: Violin plots of FGF family genes by cell state. FGFR2 is the **only** FGF family gene upregulated in activated cells; FGF10, FGF1, FGF7 are all higher in quiescent.
+- **Panel D**: Violin plots of FGF family genes by cell state (expressing cells only; zero-expression cells removed to reveal distribution shape). FGFR1 excluded due to much higher expression scale (~3.0 vs ~0.1–0.8 for other FGF genes). Below each violin: % of cells expressing and overall fold change (mean across all cells including zeros). FGFR2 is the **only** FGF family gene upregulated in activated cells (3.0x↑, driven by increase in % expressing from 2% to 6%); FGF10 is strongly downregulated (0.2x↓).
 
 **Data**: Quaife-Ryan 2021 (E-MTAB-10035), `mouse_quaife_ryan_analyzed.h5ad`
 
