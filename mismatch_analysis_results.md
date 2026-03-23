@@ -42,9 +42,9 @@ Positive control: FGF10/FGFR2 (wet lab validated by Cheng Lab).
 3. High-confidence pairs only: n_db ≥ 3
 4. Starvation ratio: fraction of high-confidence cognate ligands significantly downregulated
 
-**Scoring**: `composite = (z_receptor + |z_ligand|) × starvation_ratio × db_weight`
+**Scoring**: `composite = (z_receptor − z_ligand) × starvation_ratio × db_weight`
 
-Where `z_receptor` and `z_ligand` are z-scores (standard deviations from the mean across all genes), and `db_weight = n_db / 5`. This is a z-score sum approach (analogous to Fisher's method for combining independent tests): because receptor upregulation and ligand downregulation are independent signals, summing their z-scores gives a principled combined statistic with no arbitrary normalization.
+Where `z_receptor > 0` (upregulated) and `z_ligand < 0` (downregulated), so `z_receptor − z_ligand` is always positive and increases with both stronger receptor upregulation and stronger ligand downregulation. `db_weight = n_db / 5`. This is analogous to Fisher's method for combining independent tests: because receptor upregulation and ligand downregulation are independent signals, their z-score difference gives a principled combined statistic with no arbitrary normalization.
 
 **Starvation ratio**: fraction of high-confidence cognate ligands that are both expressed and secreted AND significantly downregulated (denominator counts only expressed + secreted ligands, not all high-confidence ligands).
 

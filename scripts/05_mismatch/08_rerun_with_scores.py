@@ -144,10 +144,10 @@ for _, row in receptors_up.iterrows():
     starvation = n_sig_down / n_informative
 
     for _, lr_row in sig_down.iterrows():
-        # Composite = (z_receptor + |z_ligand|) × starvation × db_weight
-        # z-scores are already standardized, no arbitrary normalization needed.
-        # Sum of z-scores = joint evidence strength (Fisher's method logic).
-        z_sum = r_score + abs(lr_row['score'])
+        # Composite = (z_receptor - z_ligand) × starvation × db_weight
+        # z_receptor > 0 (upregulated), z_ligand < 0 (downregulated)
+        # So z_r - z_l = positive + positive = joint evidence strength.
+        z_sum = r_score - lr_row['score']
         db_w = lr_row['n_db'] / 5.0
 
         composite = z_sum * starvation * db_w
