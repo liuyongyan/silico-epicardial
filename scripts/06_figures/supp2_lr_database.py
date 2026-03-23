@@ -55,15 +55,16 @@ n_pairs = len(lr)
 n_ligands = lr['ligand'].nunique()
 n_receptors = lr['receptor'].nunique()
 
-# HC subset
-if 'n_db' in lr.columns:
-    lr_hc = lr[lr['n_db'] >= 3]
-else:
-    lr_hc = lr  # fallback
+# HC subset — get from cross-species file which has n_db
+cross = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "cross_species_lr_mismatch_scores.csv")
+lr_hc_pairs = cross[cross['n_db'] >= 3][['receptor', 'ligand']].drop_duplicates()
+# Convert to mouse gene names for counting
+lr_hc_pairs['ligand_m'] = lr_hc_pairs['ligand'].apply(lambda g: g[0].upper() + g[1:].lower())
+lr_hc_pairs['receptor_m'] = lr_hc_pairs['receptor'].apply(lambda g: g[0].upper() + g[1:].lower())
 
-n_pairs_hc = len(lr_hc)
-n_ligands_hc = lr_hc['ligand'].nunique()
-n_receptors_hc = lr_hc['receptor'].nunique()
+n_pairs_hc = len(lr_hc_pairs)
+n_ligands_hc = lr_hc_pairs['ligand_m'].nunique()
+n_receptors_hc = lr_hc_pairs['receptor_m'].nunique()
 
 categories = ['Pairs', 'Ligands', 'Receptors']
 all_vals = [n_pairs, n_ligands, n_receptors]
