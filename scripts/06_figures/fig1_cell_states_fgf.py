@@ -111,62 +111,51 @@ ax.set_xlabel('UMAP 1', fontsize=10)
 ax.set_ylabel('UMAP 2', fontsize=10)
 ax.set_title('C. FGF10 Expression', fontsize=12, fontweight='bold')
 
-# ---- Panel D: Violin Plot (without Fgfr1 to fix scale) ----
+# ---- Panel D: Bar chart of mean expression (all cells, incl. zeros) ----
 ax = fig.add_subplot(gs[1, 1])
 
-genes_to_plot = ['Fgf1', 'Fgf2', 'Fgf7', 'Fgf10', 'Fgfr2']  # Fgfr1 removed (dominates Y scale)
+genes_to_plot = ['Fgf1', 'Fgf2', 'Fgf7', 'Fgf10', 'Fgfr2']
 genes_to_plot = [g for g in genes_to_plot if g in obs_df.columns]
 
-# Only keep cells with expression > 0
-data_q = []
-data_a = []
+mean_q = []
+mean_a = []
 pct_q = []
 pct_a = []
 for gene in genes_to_plot:
-    q_all = obs_df.loc[obs_df['cell_state'] == 'quiescent', gene]
-    a_all = obs_df.loc[obs_df['cell_state'] == 'activated', gene]
-    pct_q.append((q_all > 0).mean() * 100)
-    pct_a.append((a_all > 0).mean() * 100)
-    data_q.append(q_all[q_all > 0].values)
-    data_a.append(a_all[a_all > 0].values)
+    q_vals = obs_df.loc[obs_df['cell_state'] == 'quiescent', gene]
+    a_vals = obs_df.loc[obs_df['cell_state'] == 'activated', gene]
+    mean_q.append(q_vals.mean())
+    mean_a.append(a_vals.mean())
+    pct_q.append((q_vals > 0).mean() * 100)
+    pct_a.append((a_vals > 0).mean() * 100)
 
 x = np.arange(len(genes_to_plot))
 width = 0.35
 
-vp1 = ax.violinplot(data_q, positions=x - width/2, showmeans=True, showmedians=False, widths=0.3)
-vp2 = ax.violinplot(data_a, positions=x + width/2, showmeans=True, showmedians=False, widths=0.3)
+bars_q = ax.bar(x - width/2, mean_q, width, color='#3498DB', alpha=0.8, label='Quiescent')
+bars_a = ax.bar(x + width/2, mean_a, width, color='#E74C3C', alpha=0.8, label='Activated')
 
-for pc in vp1['bodies']:
-    pc.set_facecolor('#3498DB')
-    pc.set_alpha(0.7)
-for pc in vp2['bodies']:
-    pc.set_facecolor('#E74C3C')
-    pc.set_alpha(0.7)
+# Add fold change annotation above each pair
+for i in range(len(genes_to_plot)):
+    if mean_q[i] > 0:
+        fc = mean_a[i] / mean_q[i]
+        top = max(mean_q[i], mean_a[i])
+        direction = '↑' if fc > 1.2 else ('↓' if fc < 0.8 else '–')
+        color = '#E74C3C' if fc > 1.2 else ('#3498DB' if fc < 0.8 else '#7F8C8D')
+        ax.text(x[i], top + 0.015, f'{fc:.1f}x {direction}',
+                fontsize=9, ha='center', fontweight='bold', color=color)
 
-for partname in ['cmeans', 'cmins', 'cmaxes', 'cbars']:
-    if partname in vp1:
-        vp1[partname].set_color('#3498DB')
-        vp1[partname].set_linewidth(1)
-    if partname in vp2:
-        vp2[partname].set_color('#E74C3C')
-        vp2[partname].set_linewidth(1)
+# Add % expressing below bars
+for i in range(len(genes_to_plot)):
+    ax.text(x[i] - width/2, -0.03, f'{pct_q[i]:.0f}%', fontsize=7, ha='center', color='#1A5276')
+    ax.text(x[i] + width/2, -0.03, f'{pct_a[i]:.0f}%', fontsize=7, ha='center', color='#922B21')
 
 ax.set_xticks(x)
 ax.set_xticklabels(genes_to_plot, fontsize=10)
-ax.set_ylabel('Expression (log1p)', fontsize=10)
-ax.set_title('D. FGF Family by Cell State (expressing cells only)', fontsize=12, fontweight='bold')
-
-from matplotlib.patches import Patch
-ax.legend([Patch(color='#3498DB', alpha=0.7), Patch(color='#E74C3C', alpha=0.7)],
-          ['Quiescent', 'Activated'], fontsize=9, loc='upper left')
-
-# Add % expressing labels below each violin
-for i, gene in enumerate(genes_to_plot):
-    ax.text(i - width/2, -0.5, f'{pct_q[i]:.0f}%', fontsize=10, ha='center', color='#1A5276', fontweight='bold')
-    ax.text(i + width/2, -0.5, f'{pct_a[i]:.0f}%', fontsize=10, ha='center', color='#922B21', fontweight='bold')
-
-ax.text(len(genes_to_plot)/2 - 0.5, -1.0, '% of cells expressing', fontsize=9, ha='center', color='#2C3E50', fontweight='bold')
-ax.set_ylim(-1.3, None)
+ax.set_ylabel('Mean Expression (log1p, all cells)', fontsize=10)
+ax.set_title('D. FGF Family: Mean Expression by Cell State', fontsize=12, fontweight='bold')
+ax.legend(fontsize=9, loc='upper left')
+ax.set_ylim(-0.06, max(max(mean_q), max(mean_a)) * 1.3)
 
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.png', dpi=200, bbox_inches='tight')
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.pdf', bbox_inches='tight')
