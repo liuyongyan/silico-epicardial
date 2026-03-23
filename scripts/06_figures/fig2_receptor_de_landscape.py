@@ -101,34 +101,45 @@ ax.set_ylabel('-log₁₀(padj)', fontsize=10)
 ax.set_title('A. Receptor Volcano Plot (artifacts removed)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=6, loc='upper left', ncol=2, framealpha=0.8)
 
-# ---- Panel B: Top 20 + Bottom 20 Receptors (by score) ----
+# ---- Panel B: Waterfall — all sig upregulated receptors, highlight key genes ----
 ax = axes[1]
-top20 = rec[rec['scores'] > 0].nlargest(20, 'scores')
-bot20 = rec[rec['scores'] < 0].nsmallest(20, 'scores')
-combined = pd.concat([bot20, top20])  # bottom first (will be at bottom of plot)
+sig_up = rec[(rec['scores'] > 0) & (rec['pvals_adj'] < 0.05)].sort_values('scores', ascending=False).reset_index(drop=True)
+n_up = len(sig_up)
 
-y_pos = range(len(combined))
-colors = []
-for i, (_, row) in enumerate(combined.iterrows()):
-    if row['scores'] > 0:
-        colors.append(pw_colors.get(row['pathway'], '#BDC3C7'))
-    else:
-        # Downregulated: use lighter/blue-tinted version
-        colors.append('#85C1E9')
+# Plot waterfall curve
+ax.fill_between(range(n_up), sig_up['scores'], alpha=0.15, color='#E74C3C')
+ax.plot(range(n_up), sig_up['scores'], color='#E74C3C', linewidth=0.8, alpha=0.6)
 
-bars = ax.barh(y_pos, combined['scores'], color=colors, edgecolor='white', linewidth=0.3)
+# Highlight key receptors
+key_genes = {
+    'Fgfr2': ('#E74C3C', 'FGF'),
+    'Bmpr2': ('#3498DB', 'BMP'),
+    'Acvr1': ('#2980B9', 'BMP'),
+    'Fzd2': ('#2ECC71', 'Wnt'),
+    'Egfr': ('#34495E', 'EGF'),
+    'Notch1': ('#E67E22', 'Notch'),
+    'Epha7': ('#D35400', 'Ephrin'),
+    'Tgfbr1': ('#9B59B6', 'TGF-β'),
+}
 
-# Mark FGFR2
-for i, (_, row) in enumerate(combined.iterrows()):
-    if row['names'] == 'Fgfr2':
-        bars[i].set_edgecolor('red')
-        bars[i].set_linewidth(2)
+for gene, (color, pw) in key_genes.items():
+    idx = sig_up[sig_up['names'] == gene].index
+    if len(idx) > 0:
+        i = idx[0]
+        score = sig_up.loc[i, 'scores']
+        rank = i + 1
+        ax.scatter(i, score, c=color, s=60, zorder=3, edgecolors='black', linewidths=0.5)
+        # Stagger labels to avoid overlap
+        y_offset = 8 if rank % 2 == 0 else -12
+        ax.annotate(f'{gene}\n(#{rank})',
+                    (i, score), fontsize=7, fontweight='bold', color=color,
+                    ha='center', va='bottom' if y_offset > 0 else 'top',
+                    xytext=(0, y_offset), textcoords='offset points')
 
-ax.set_yticks(y_pos)
-ax.set_yticklabels(combined['names'], fontsize=6.5)
-ax.axvline(0, color='black', linewidth=0.5)
-ax.set_xlabel('Wilcoxon Score', fontsize=10)
-ax.set_title('B. Top 20 Up & Down Receptors (by Score)', fontsize=12, fontweight='bold')
+ax.set_xlabel(f'Receptor Rank (1–{n_up} upregulated)', fontsize=10)
+ax.set_ylabel('Wilcoxon Score', fontsize=10)
+ax.set_title(f'B. All {n_up} Upregulated Receptors', fontsize=12, fontweight='bold')
+ax.set_xlim(-5, n_up + 5)
 
 # ---- Panel C: Pathway-Level Summary ----
 ax = axes[2]
