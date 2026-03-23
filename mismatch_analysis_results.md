@@ -168,14 +168,14 @@ The quiescent vs activated labels are derived from signature-based scoring with 
 
 FGF10/FGFR2 ranks **#9/83** with fully automated score-based scoring -- no manual annotation. Comparison across scoring methods:
 
-| Pair | Manual | DGIdb-only | logFC-based | **Score-based (final)** |
-|------|:------:|:----------:|:-----------:|:-----------------------:|
-| Fgfr2/Fgf10 | 1 | 27 | 13 | **9** |
-| Fgfr2/Fgf16 | -- | -- | 20 | **11** |
-| Acvr1/Bmp6 | 2 | 11 | 5 | **10** |
-| Bmpr2/Bmp6 | 5 | 8 | 3 | **7** |
-| Unc5b/Ntn1 | 6 | 18 | 7 | **1** |
-| Bmpr2/Bmp2 | 7 | 20 | 18 | **20** |
+| Pair | Mismatch only | DGIdb-only | logFC-based | **Score-based (final)** |
+|------|:------------:|:----------:|:-----------:|:-----------------------:|
+| Fgfr2/Fgf10 | 77/83 | 27 | 13 | **9** |
+| Fgfr2/Fgf16 | 80/83 | -- | 20 | **11** |
+| Acvr1/Bmp6 | 23/83 | 11 | 5 | **10** |
+| Bmpr2/Bmp6 | 29/83 | 8 | 3 | **7** |
+| Unc5b/Ntn1 | 1/83 | 18 | 7 | **1** |
+| Bmpr2/Bmp2 | 25/83 | 20 | 18 | **20** |
 
 Note: Tyro3/Gas6, Insr/Nampt, and Fgfr2/Fgf7 were removed from the 83 score-based mismatch pairs because their ligands did not meet the score < 0 (padj < 0.05) filter. This is expected: Wilcoxon scores correct for logFC artifacts in near-zero-expression genes, so some previously included pairs with inflated logFC no longer qualify.
 
