@@ -44,9 +44,15 @@ pathway_map = {
 }
 rec['pathway'] = rec['names'].map(pathway_map).fillna('Other')
 
-# Use Wilcoxon scores for x-axis
-rec['score_capped'] = np.clip(rec['scores'], -200, 200)
-rec['neg_log_padj'] = -np.log10(rec['pvals_adj'].clip(lower=1e-300))
+# Panel A uses logFC (standard volcano), but filter out inflated artifacts
+# Artifact detection: |logFC/score| ratio > 3 indicates near-zero denominator artifact
+rec['logfc_score_ratio'] = rec['logfoldchanges'].abs() / (rec['scores'].abs() + 0.01)
+rec['is_artifact'] = rec['logfc_score_ratio'] > 3
+rec_clean = rec[~rec['is_artifact']].copy()
+print(f"Filtered {rec['is_artifact'].sum()}/{len(rec)} artifact genes (logFC/score ratio > 3)")
+
+rec_clean['logfc_capped'] = np.clip(rec_clean['logfoldchanges'], -15, 15)
+rec_clean['neg_log_padj'] = -np.log10(rec_clean['pvals_adj'].clip(lower=1e-300))
 
 # Highlight genes
 highlights = ['Fgfr2','Bmpr2','Fzd2','Acvr1','Egfr','Tgfbr1','Notch1','Kdr','Pdgfra','Epha7']
@@ -61,28 +67,28 @@ pw_colors = {
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-# ---- Panel A: Volcano Plot (scores on x-axis) ----
+# ---- Panel A: Volcano Plot (logFC x-axis, artifacts removed) ----
 ax = axes[0]
 # Background (Other)
-other = rec[rec['pathway'] == 'Other']
-ax.scatter(other['score_capped'], other['neg_log_padj'],
+other = rec_clean[rec_clean['pathway'] == 'Other']
+ax.scatter(other['logfc_capped'], other['neg_log_padj'],
            c='#D5D8DC', s=8, alpha=0.3, zorder=1)
 
 # Colored by pathway
 for pw, color in pw_colors.items():
     if pw == 'Other':
         continue
-    sub = rec[rec['pathway'] == pw]
+    sub = rec_clean[rec_clean['pathway'] == pw]
     if len(sub) > 0:
-        ax.scatter(sub['score_capped'], sub['neg_log_padj'],
+        ax.scatter(sub['logfc_capped'], sub['neg_log_padj'],
                    c=color, s=20, alpha=0.7, label=pw, zorder=2)
 
 # Highlight specific genes
 for gene in highlights:
-    row = rec[rec['names'] == gene]
+    row = rec_clean[rec_clean['names'] == gene]
     if len(row) > 0:
         r = row.iloc[0]
-        ax.annotate(gene, (r['score_capped'], r['neg_log_padj']),
+        ax.annotate(gene, (r['logfc_capped'], r['neg_log_padj']),
                     fontsize=7, fontweight='bold',
                     xytext=(5, 5), textcoords='offset points',
                     arrowprops=dict(arrowstyle='-', color='black', lw=0.5),
@@ -90,9 +96,9 @@ for gene in highlights:
 
 ax.axhline(-np.log10(0.05), color='gray', linestyle='--', linewidth=0.5)
 ax.axvline(0, color='gray', linestyle='--', linewidth=0.5)
-ax.set_xlabel('Wilcoxon Score (Activated vs Quiescent)', fontsize=10)
-ax.set_ylabel('-log\u2081\u2080(padj)', fontsize=10)
-ax.set_title('A. Receptor Volcano Plot', fontsize=12, fontweight='bold')
+ax.set_xlabel('log₂FC (Activated vs Quiescent)', fontsize=10)
+ax.set_ylabel('-log₁₀(padj)', fontsize=10)
+ax.set_title('A. Receptor Volcano Plot (artifacts removed)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=6, loc='upper left', ncol=2, framealpha=0.8)
 
 # ---- Panel B: Top 20 Receptors Bar Plot (by score) ----
