@@ -101,24 +101,34 @@ ax.set_ylabel('-log₁₀(padj)', fontsize=10)
 ax.set_title('A. Receptor Volcano Plot (artifacts removed)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=6, loc='upper left', ncol=2, framealpha=0.8)
 
-# ---- Panel B: Top 20 Receptors Bar Plot (by score) ----
+# ---- Panel B: Top 20 + Bottom 20 Receptors (by score) ----
 ax = axes[1]
-top20 = rec[rec['scores'] > 0].nlargest(20, 'scores').iloc[::-1]
-colors = [pw_colors.get(top20.iloc[i]['pathway'], '#BDC3C7') for i in range(len(top20))]
-bars = ax.barh(range(len(top20)), np.clip(top20['scores'], 0, 200), color=colors)
+top20 = rec[rec['scores'] > 0].nlargest(20, 'scores')
+bot20 = rec[rec['scores'] < 0].nsmallest(20, 'scores')
+combined = pd.concat([bot20, top20])  # bottom first (will be at bottom of plot)
 
-# Mark FGFR2 position
-for i, (_, row) in enumerate(top20.iterrows()):
-    ax.text(np.clip(row['scores'], 0, 200) + 1, i,
-            f"{row['pathway']}", fontsize=6, va='center', color='#555')
+y_pos = range(len(combined))
+colors = []
+for i, (_, row) in enumerate(combined.iterrows()):
+    if row['scores'] > 0:
+        colors.append(pw_colors.get(row['pathway'], '#BDC3C7'))
+    else:
+        # Downregulated: use lighter/blue-tinted version
+        colors.append('#85C1E9')
+
+bars = ax.barh(y_pos, combined['scores'], color=colors, edgecolor='white', linewidth=0.3)
+
+# Mark FGFR2
+for i, (_, row) in enumerate(combined.iterrows()):
     if row['names'] == 'Fgfr2':
         bars[i].set_edgecolor('red')
         bars[i].set_linewidth(2)
 
-ax.set_yticks(range(len(top20)))
-ax.set_yticklabels(top20['names'], fontsize=8)
+ax.set_yticks(y_pos)
+ax.set_yticklabels(combined['names'], fontsize=6.5)
+ax.axvline(0, color='black', linewidth=0.5)
 ax.set_xlabel('Wilcoxon Score', fontsize=10)
-ax.set_title('B. Top 20 Upregulated Receptors (by Score)', fontsize=12, fontweight='bold')
+ax.set_title('B. Top 20 Up & Down Receptors (by Score)', fontsize=12, fontweight='bold')
 
 # ---- Panel C: Pathway-Level Summary ----
 ax = axes[2]
