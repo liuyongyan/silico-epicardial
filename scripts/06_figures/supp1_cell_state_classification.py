@@ -125,6 +125,10 @@ for i, (mean, std, w, color, label) in enumerate(zip(
 # Threshold line
 ax.axvline(threshold, color='black', linewidth=2, linestyle='--', label=f'Threshold = {threshold:.0f}')
 
+ax.text(threshold + 0.5, ax.get_ylim()[1] * 0.5 if ax.get_ylim()[1] > 0 else 0.5,
+        'Agreement: 60.8%', fontsize=9, color='gray', style='italic',
+        ha='left', va='center')
+
 ax.set_xlabel('State Potential (activated_score − quiescent_score)', fontsize=10)
 ax.set_ylabel('Density', fontsize=10)
 ax.set_title('B. GMM Threshold Selection', fontsize=12, fontweight='bold')

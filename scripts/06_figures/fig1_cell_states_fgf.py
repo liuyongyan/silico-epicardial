@@ -76,25 +76,36 @@ gs = fig.add_gridspec(2, 2, hspace=0.3, wspace=0.3)
 
 # ---- Panel A: UMAP Cell States ----
 ax = fig.add_subplot(gs[0, 0])
+# Full dataset counts for legend
+full_counts = obs_df['cell_state'].value_counts()
+state_labels = {
+    'quiescent': f'Quiescent (n={full_counts.get("quiescent", 0):,})',
+    'activated': f'Activated (n={full_counts.get("activated", 0):,})',
+}
 for state, color, zorder in [('quiescent', '#3498DB', 1), ('activated', '#E74C3C', 2)]:
     mask = plot_df['cell_state'] == state
     ax.scatter(plot_df.loc[mask, 'umap_1'], plot_df.loc[mask, 'umap_2'],
-               c=color, s=0.5, alpha=0.3, label=f'{state} (n={mask.sum()})',
+               c=color, s=0.5, alpha=0.3, label=state_labels[state],
                rasterized=True, zorder=zorder)
 ax.legend(fontsize=8, markerscale=10, loc='upper left')
 ax.set_xlabel('UMAP 1', fontsize=10)
 ax.set_ylabel('UMAP 2', fontsize=10)
 ax.set_title('A. Cell States (Mouse Epicardial)', fontsize=12, fontweight='bold')
 
+# ---- Shared color bar range for Panels B and C ----
+vmax_fgfr2 = np.percentile(plot_df['Fgfr2'][plot_df['Fgfr2'] > 0], 95) if (plot_df['Fgfr2'] > 0).any() else 1
+vmax_fgf10 = np.percentile(plot_df['Fgf10'][plot_df['Fgf10'] > 0], 95) if (plot_df['Fgf10'] > 0).any() else 1
+shared_vmax = max(vmax_fgfr2, vmax_fgf10)
+
 # ---- Panel B: UMAP FGFR2 ----
 ax = fig.add_subplot(gs[0, 1])
 # Sort by expression so high values plotted on top
 order = plot_df['Fgfr2'].argsort()
-vmax = np.percentile(plot_df['Fgfr2'][plot_df['Fgfr2'] > 0], 95) if (plot_df['Fgfr2'] > 0).any() else 1
 sc_plot = ax.scatter(plot_df.iloc[order]['umap_1'], plot_df.iloc[order]['umap_2'],
                      c=plot_df.iloc[order]['Fgfr2'], cmap='Reds', s=0.5, alpha=0.5,
-                     vmin=0, vmax=vmax, rasterized=True)
-plt.colorbar(sc_plot, ax=ax, shrink=0.6, label='Expression (log1p)')
+                     vmin=0, vmax=shared_vmax, rasterized=True)
+cbar_b = plt.colorbar(sc_plot, ax=ax, shrink=0.6)
+cbar_b.set_label('Expression (log1p)', fontsize=9)
 ax.set_xlabel('UMAP 1', fontsize=10)
 ax.set_ylabel('UMAP 2', fontsize=10)
 ax.set_title('B. FGFR2 Expression', fontsize=12, fontweight='bold')
@@ -102,11 +113,11 @@ ax.set_title('B. FGFR2 Expression', fontsize=12, fontweight='bold')
 # ---- Panel C: UMAP FGF10 ----
 ax = fig.add_subplot(gs[1, 0])
 order = plot_df['Fgf10'].argsort()
-vmax = np.percentile(plot_df['Fgf10'][plot_df['Fgf10'] > 0], 95) if (plot_df['Fgf10'] > 0).any() else 1
 sc_plot = ax.scatter(plot_df.iloc[order]['umap_1'], plot_df.iloc[order]['umap_2'],
                      c=plot_df.iloc[order]['Fgf10'], cmap='Blues', s=0.5, alpha=0.5,
-                     vmin=0, vmax=vmax, rasterized=True)
-plt.colorbar(sc_plot, ax=ax, shrink=0.6, label='Expression (log1p)')
+                     vmin=0, vmax=shared_vmax, rasterized=True)
+cbar_c = plt.colorbar(sc_plot, ax=ax, shrink=0.6)
+cbar_c.set_label('Expression (log1p)', fontsize=9)
 ax.set_xlabel('UMAP 1', fontsize=10)
 ax.set_ylabel('UMAP 2', fontsize=10)
 ax.set_title('C. FGF10 Expression', fontsize=12, fontweight='bold')
@@ -176,10 +187,10 @@ for i in range(len(genes_to_plot)):
     # Fold change
     ax.text(x[i], -1.1, f'{fc:.1f}x {direction}', fontsize=10, ha='center', fontweight='bold', color=fc_color)
 
-ax.text(-0.7, -0.6, '% expr:', fontsize=8, ha='right', color='#2C3E50', fontweight='bold')
-ax.text(-0.7, -1.1, 'FC:', fontsize=8, ha='right', color='#2C3E50', fontweight='bold')
+ax.text(-0.7, -0.6, '% expr:', fontsize=9, ha='right', color='#2C3E50', fontweight='bold')
+ax.text(-0.7, -1.1, 'FC:', fontsize=9, ha='right', color='#2C3E50', fontweight='bold')
 ax.set_ylim(-1.5, None)
 
-plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.png', dpi=200, bbox_inches='tight')
+plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.png', dpi=300, bbox_inches='tight')
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.pdf', bbox_inches='tight')
 print("Saved: fig1_cell_states_fgf.png/pdf")

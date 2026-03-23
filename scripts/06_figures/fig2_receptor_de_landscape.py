@@ -101,7 +101,7 @@ for gene in highlights:
 
 ax.axhline(-np.log10(0.05), color='gray', linestyle='--', linewidth=0.5)
 ax.axvline(0, color='gray', linestyle='--', linewidth=0.5)
-ax.set_xlabel('log₂FC (Activated vs Quiescent)', fontsize=10)
+ax.set_xlabel('logFC (Activated vs Quiescent)', fontsize=10)
 ax.set_ylabel('-log₁₀(padj)', fontsize=10)
 ax.set_title('A. Receptor Volcano Plot', fontsize=12, fontweight='bold')
 ax.legend(fontsize=6, loc='upper left', ncol=2, framealpha=0.8)
@@ -183,7 +183,9 @@ for lp in label_positions:
 
 ax.set_xlabel(f'Receptor Rank (1\u2013{n_up} upregulated)', fontsize=10)
 ax.set_ylabel('log(OR)', fontsize=10)
-ax.set_title(f'B. All {n_up} Upregulated Receptors (OR-based)', fontsize=12, fontweight='bold')
+ax.set_title('B. Upregulated Receptors by log(OR)', fontsize=12, fontweight='bold')
+ax.text(0.5, 1.0, f'(OR>1, Fisher p<0.05, n={n_up})', transform=ax.transAxes,
+        fontsize=8, ha='center', va='top', color='gray', style='italic')
 ax.set_xlim(-5, n_up + 5)
 
 # ---- Panel C: Pathway-Level Summary (OR-based) ----
@@ -199,6 +201,8 @@ for pw in pathways_of_interest:
     pw_data.append({'pathway': pw, 'up': n_up_pw, 'down': -n_down_pw})
 
 pw_df = pd.DataFrame(pw_data)
+# Remove pathways with 0 bars on both sides
+pw_df = pw_df[(pw_df['up'] > 0) | (pw_df['down'] < 0)].reset_index(drop=True)
 x = range(len(pw_df))
 ax.barh(x, pw_df['up'], color='#E74C3C', alpha=0.7, label='Upregulated (OR > 1)')
 ax.barh(x, pw_df['down'], color='#3498DB', alpha=0.7, label='Downregulated (OR < 1)')

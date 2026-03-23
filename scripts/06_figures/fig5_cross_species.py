@@ -103,18 +103,17 @@ for gene, offset in key_labels:
             labeled.add(gene)
 
 # Highlight Q1
-m_lim = 2.5
-h_lim = 1.5
-ax.fill_between([0, m_lim], 0, h_lim, alpha=0.05, color='red')
+axis_lim = 2.0
+ax.fill_between([0, axis_lim], 0, axis_lim, alpha=0.05, color='red')
 
 ax.axhline(0, color='gray', linewidth=0.5, linestyle='--')
 ax.axvline(0, color='gray', linewidth=0.5, linestyle='--')
 
 # Diagonal reference
-ax.plot([-m_lim, m_lim], [-m_lim, m_lim], 'k--', linewidth=0.5, alpha=0.3)
+ax.plot([-axis_lim, axis_lim], [-axis_lim, axis_lim], 'k--', linewidth=0.5, alpha=0.3)
 
-ax.set_xlim(-m_lim, m_lim)
-ax.set_ylim(-h_lim, h_lim)
+ax.set_xlim(-axis_lim, axis_lim)
+ax.set_ylim(-axis_lim, axis_lim)
 ax.set_xlabel('Mouse Receptor log(OR)', fontsize=10)
 ax.set_ylabel('Human Receptor log(OR)', fontsize=10)
 ax.set_title('A. Receptor log(OR): Mouse vs Human', fontsize=12, fontweight='bold')
@@ -293,9 +292,9 @@ for i, (_, r) in enumerate(top10.iterrows()):
         i + 1,
         f"{r['receptor']}/{r['ligand']}",
         f"{r['priority_score']:.3f}",
-        cons_label,
+        cons_label if cons_label else '-',
         f"{r['druggability']:.2f}",
-        pw,
+        pw if pw else '-',
     ])
 
 table = ax.table(

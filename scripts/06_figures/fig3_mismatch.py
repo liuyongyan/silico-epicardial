@@ -77,6 +77,7 @@ ax.text(5.0, 1.8, 'Deliver depleted ligands\n\u2192 engage upregulated receptors
 ax.text(5.0, 0.6, 'Example: FGF10 (\u2193) + FGFR2 (\u2191) \u2192 Deliver FGF10',
         fontsize=8, ha='center', fontweight='bold', color='#2C3E50',
         bbox=dict(boxstyle='round,pad=0.3', facecolor='#FDEBD0', edgecolor='#E67E22'))
+ax.text(5.0, -0.2, '(Conceptual diagram)', fontsize=7, ha='center', style='italic', color='#7F8C8D')
 
 # ---- Panel B: Heatmap - Top Pairs (using log(OR)) ----
 ax = axes[0, 1]
@@ -113,7 +114,7 @@ sns.heatmap(heatmap_data,
             annot=True, fmt='.2f', annot_kws={'fontsize': 7},
             ax=ax, cbar_kws={'shrink': 0.6, 'label': 'log(OR)'})
 ax.set_title('B. Top Mismatch Pairs (Mouse, OR-based)', fontsize=12, fontweight='bold')
-ax.tick_params(axis='y', labelsize=7)
+ax.tick_params(axis='y', labelsize=6)
 
 # ---- Panel C: Scatter - Receptor log(OR) vs Ligand log(OR) ----
 ax = axes[1, 0]
@@ -147,7 +148,7 @@ ax.scatter(conserved['r_log_or'], conserved['l_log_or'],
 # Highlight key pairs
 key_pairs = [
     ('FGFR2',  'FGF10', (10, -12)),
-    ('FGFR2',  'FGF16', (-50, -20)),
+    ('FGFR2',  'FGF16', (-65, -30)),
     ('BMPR2',  'BMP6',  (8, 10)),
     ('ACVR1',  'BMP6',  (-55, -12)),
     ('BMPR2',  'BMP4',  (-55, 8)),
@@ -204,9 +205,12 @@ bars = ax.barh(range(len(top20)), top20['composite_or'], color=colors, edgecolor
 # Highlight FGFR2/FGF10
 for i, (_, row) in enumerate(top20.iterrows()):
     if row['receptor'] == 'Fgfr2' and row['ligand'] == 'Fgf10':
-        bars[i].set_edgecolor('#E74C3C')
-        bars[i].set_linewidth(2)
+        bars[i].set_edgecolor('#FF0000')
+        bars[i].set_linewidth(3)
         bars[i].set_hatch('//')
+        # Add star marker at end of bar
+        ax.plot(top20.iloc[i]['composite_or'], i, marker='*', color='#FF0000',
+                markersize=12, zorder=5)
 
 ax.set_yticks(range(len(top20)))
 ax.set_yticklabels(top20['pair'], fontsize=7)
