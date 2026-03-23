@@ -97,37 +97,60 @@ for _, row in receptors_up.iterrows():
         continue
 
     # Check which HC ligands are significantly downregulated (score < 0, padj < 0.05)
+    # Only count EXPRESSED + SECRETED ligands for starvation denominator:
+    #   - Exclude ligands not detected (|score| < 0.5 AND padj > 0.5 → uninformative)
+    #   - Exclude non-secreted ligands (intracellular proteins, chemokines acting on wrong receptor)
     lig_data = []
     for _, lr_row in cognates.iterrows():
         lig_m = lr_row['ligand_mouse']
+        lig_h = lr_row['ligand_human']
         ndb = lr_row['n_db']
         if lig_m in m_score:
+            s = m_score[lig_m]
+            p = m_padj.get(lig_m, 1.0)
+
+            # Check if ligand is expressed (has meaningful DE signal)
+            is_expressed = abs(s) >= 0.5 or p < 0.5
+
+            # Check if ligand is secreted (from UniProt deliverability data)
+            is_secreted = True  # default
+            if lig_h in deliver_data.index:
+                cat = deliver_data.loc[lig_h, 'deliver_category']
+                is_secreted = cat in ('secreted', 'unknown')  # keep unknown to avoid over-filtering
+
             lig_data.append({
                 'ligand': lig_m,
-                'ligand_human': lr_row['ligand_human'],
-                'score': m_score[lig_m],
-                'padj': m_padj.get(lig_m, 1.0),
+                'ligand_human': lig_h,
+                'score': s,
+                'padj': p,
                 'logfc': m_logfc.get(lig_m, 0),
                 'n_db': ndb,
+                'is_expressed': is_expressed,
+                'is_secreted': is_secreted,
             })
 
     if len(lig_data) == 0:
         continue
 
     lig_df = pd.DataFrame(lig_data)
-    n_hc = len(lig_df)
-    sig_down = lig_df[(lig_df['score'] < 0) & (lig_df['padj'] < 0.05)]
+
+    # Starvation: only count expressed + secreted ligands in denominator
+    informative = lig_df[lig_df['is_expressed'] & lig_df['is_secreted']]
+    n_informative = len(informative)
+    if n_informative == 0:
+        continue
+    sig_down = informative[(informative['score'] < 0) & (informative['padj'] < 0.05)]
     n_sig_down = len(sig_down)
-    starvation = n_sig_down / n_hc
+    starvation = n_sig_down / n_informative
 
     for _, lr_row in sig_down.iterrows():
-        # Normalize scores to [0, 1] range
-        # Max receptor score ~190, max |ligand score| ~270
-        r_norm = min(r_score / 200.0, 1.0)
-        l_norm = min(abs(lr_row['score']) / 200.0, 1.0)
+        # Composite = (z_receptor + |z_ligand|) × starvation × db_weight
+        # z-scores are already standardized, no arbitrary normalization needed.
+        # Sum of z-scores = joint evidence strength (Fisher's method logic).
+        z_sum = r_score + abs(lr_row['score'])
         db_w = lr_row['n_db'] / 5.0
 
-        composite = r_norm * l_norm * starvation * db_w
+        composite = z_sum * starvation * db_w
 
         pair_results.append({
             'receptor': receptor,
@@ -140,7 +163,7 @@ for _, row in receptors_up.iterrows():
             'n_db': lr_row['n_db'],
             'starvation': round(starvation, 3),
             'n_sig_down_hc': n_sig_down,
-            'n_hc_ligands': n_hc,
+            'n_hc_ligands': n_informative,
             'composite': round(composite, 4),
         })
 
