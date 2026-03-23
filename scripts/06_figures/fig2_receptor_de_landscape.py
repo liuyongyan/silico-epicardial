@@ -127,7 +127,7 @@ key_genes = {
     'Tgfbr1': ('#9B59B6', 'TGF-\u03b2'),
 }
 
-# Collect gene positions, sort by rank, then stagger labels to upper-right
+# Collect gene positions, sort by rank
 gene_positions = []
 for gene, (color, pw) in key_genes.items():
     idx = sig_up[sig_up['names'] == gene].index
@@ -136,25 +136,28 @@ for gene, (color, pw) in key_genes.items():
         val = sig_up.loc[i, 'log_or']
         gene_positions.append({'gene': gene, 'i': i, 'val': val, 'color': color, 'rank': i+1})
 
-# Sort by rank (x position) so we can stagger y-offsets
 gene_positions.sort(key=lambda x: x['i'])
 
-# Place labels to upper-right, stagger vertically
-y_label_start = sig_up['log_or'].max() * 0.95
-y_step = sig_up['log_or'].max() * 0.08
+# Place labels close to points, stagger vertically to avoid overlap
+# Each label goes slightly above+right of its point
+used_y = []  # track used label y positions to avoid overlap
+min_gap = sig_up['log_or'].max() * 0.06  # minimum vertical gap between labels
 
-for idx_g, gp in enumerate(gene_positions):
+for gp in gene_positions:
     ax.scatter(gp['i'], gp['val'], c=gp['color'], s=60, zorder=3,
                edgecolors='black', linewidths=0.5)
-    # Label y position: stagger from top
-    label_y = y_label_start - idx_g * y_step
-    label_x = gp['i'] + n_up * 0.03
-    ax.annotate(f"{gp['gene']} (#{gp['rank']})",
-                (gp['i'], gp['val']),
-                xytext=(label_x, label_y),
-                fontsize=7, fontweight='bold', color=gp['color'],
-                arrowprops=dict(arrowstyle='->', color=gp['color'], lw=0.7),
-                zorder=4)
+
+    # Start with label just above the point
+    label_y = gp['val'] + min_gap * 0.5
+    # Push up if too close to any existing label
+    for uy in used_y:
+        if abs(label_y - uy) < min_gap:
+            label_y = uy + min_gap
+    used_y.append(label_y)
+
+    ax.text(gp['i'] + n_up * 0.01, label_y,
+            f"{gp['gene']} (#{gp['rank']})",
+            fontsize=7, fontweight='bold', color=gp['color'], zorder=4)
 
 ax.set_xlabel(f'Receptor Rank (1\u2013{n_up} upregulated)', fontsize=10)
 ax.set_ylabel('log(OR)', fontsize=10)

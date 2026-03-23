@@ -131,20 +131,27 @@ conserved['m_l_log_or'] = conserved['ligand'].str.upper().map(mouse_or_upper)
 conserved['h_r_log_or'] = conserved['receptor'].map(human_or_map)
 conserved['h_l_log_or'] = conserved['ligand'].map(human_or_map)
 
-# Compute an OR-based mismatch for sorting: avg of mouse and human (r_log_or - l_log_or)
-conserved['m_mm_or'] = conserved['m_r_log_or'] - conserved['m_l_log_or']
-conserved['h_mm_or'] = conserved['h_r_log_or'] - conserved['h_l_log_or']
-conserved['avg_mm_or'] = (conserved['m_mm_or'].fillna(0) + conserved['h_mm_or'].fillna(0)) / 2
+# Filter out pairs with undetected genes (log_or == -10)
+conserved = conserved[
+    (conserved['m_r_log_or'] > -5) & (conserved['m_l_log_or'] > -5) &
+    (conserved['h_r_log_or'] > -5) & (conserved['h_l_log_or'] > -5)
+].copy()
+
+# Compute avg mismatch for sorting
+conserved['avg_mm_or'] = (
+    (conserved['m_r_log_or'] - conserved['m_l_log_or']) +
+    (conserved['h_r_log_or'] - conserved['h_l_log_or'])
+) / 2
 
 conserved = conserved.sort_values('avg_mm_or', ascending=False)
 top20 = conserved.head(20).copy()
 top20['pair'] = top20['receptor'] + '/' + top20['ligand']
 
 hm_data = pd.DataFrame({
-    'Mouse R': top20['m_r_log_or'].values,
-    'Mouse L': top20['m_l_log_or'].values,
-    'Human R': top20['h_r_log_or'].values,
-    'Human L': top20['h_l_log_or'].values,
+    'Mouse R': np.clip(top20['m_r_log_or'].values, -3, 3),
+    'Mouse L': np.clip(top20['m_l_log_or'].values, -3, 3),
+    'Human R': np.clip(top20['h_r_log_or'].values, -3, 3),
+    'Human L': np.clip(top20['h_l_log_or'].values, -3, 3),
 }, index=top20['pair'].values)
 
 sns.heatmap(hm_data, cmap='RdBu_r', center=0, vmin=-2.5, vmax=2.5,
