@@ -42,11 +42,13 @@ Positive control: FGF10/FGFR2 (wet lab validated by Cheng Lab).
 3. High-confidence pairs only: n_db ≥ 3
 4. Starvation ratio: fraction of high-confidence cognate ligands significantly downregulated
 
-**Scoring**: `composite = receptor_score_norm × |ligand_score_norm| × starvation_ratio × (n_db / 5)`
+**Scoring**: `composite = (z_receptor + |z_ligand|) × starvation_ratio × db_weight`
 
-Where scores are capped to [0, 200] and normalized to [0, 1].
+Where `z_receptor` and `z_ligand` are z-scores (standard deviations from the mean across all genes), and `db_weight = n_db / 5`. This is a z-score sum approach (analogous to Fisher's method for combining independent tests): because receptor upregulation and ligand downregulation are independent signals, summing their z-scores gives a principled combined statistic with no arbitrary normalization.
 
-**Result**: 83 mouse mismatch pairs
+**Starvation ratio**: fraction of high-confidence cognate ligands that are both expressed and secreted AND significantly downregulated (denominator counts only expressed + secreted ligands, not all high-confidence ligands).
+
+**Result**: 77 mouse mismatch pairs
 
 ### Step 3: Cross-Species Conservation
 
@@ -143,53 +145,53 @@ The quiescent vs activated labels are derived from signature-based scoring with 
 
 | Rank | Receptor | Ligand | Score | Mismatch | Conservation | Druggability | Literature | Ligand Type | Pathway |
 |:----:|----------|--------|:-----:|:--------:|:------------:|:------------:|:----------:|:-----------:|---------|
-| 1 | UNC5B | NTN1 | 0.544 | 1.000 | 0.200 | 0.450 | 0.472 | Secreted | Other |
-| 2 | OGFR | PENK | 0.540 | 0.991 | 0.200 | 0.498 | 0.417 | Secreted | Other |
-| 3 | IL2RG | IL2 | 0.539 | 0.003 | 0.700 (relaxed) | 0.879 | 0.762 | Secreted | Other |
-| 4 | ITGB1 | CD14 | 0.538 | 0.043 | 0.700 (relaxed) | 0.782 | 0.791 | Secreted | Other |
-| 5 | IL2RG | IL15 | 0.509 | 0.012 | 0.700 (relaxed) | 0.843 | 0.636 | Secreted | Other |
-| 6 | IL1RL2 | IL18 | 0.509 | 0.036 | 0.700 (relaxed) | 0.763 | 0.675 | Secreted | Other |
-| 7 | BMPR2 | BMP6 | 0.497 | 0.057 | 0.700 (relaxed) | 0.652 | 0.701 | Secreted | BMP |
-| 8 | IL2RG | ICAM1 | 0.489 | 0.012 | 0.700 (relaxed) | 0.614 | 0.762 | Membrane | Other |
-| **9** | **FGFR2** | **FGF10** | **0.485** | 0.003 | 0.700 (relaxed) | 0.719 | 0.651 | **Secreted** | **FGF** |
-| 10 | ACVR1 | BMP6 | 0.478 | 0.077 | 0.700 (relaxed) | 0.685 | 0.542 | Secreted | BMP/Activin |
-| **11** | **FGFR2** | **FGF16** | **0.469** | 0.002 | 0.700 (relaxed) | 0.719 | 0.575 | **Secreted** | **FGF** |
-| 12 | SDC1 | LPL | 0.465 | 0.316 | 0.200 | 0.765 | 0.785 | Secreted | Other |
-| 13 | ITGB1 | LAMC2 | 0.462 | 0.053 | 0.700 (relaxed) | 0.737 | 0.442 | Secreted | Other |
-| 14 | GRIN2D | IL16 | 0.434 | 0.007 | 0.700 (relaxed) | 0.689 | 0.422 | Secreted | Other |
-| 15 | FZD1 | MYOC | 0.433 | 0.087 | 0.700 (relaxed) | 0.583 | 0.401 | Secreted | Wnt |
-| 16 | BMPR2 | BMP4 | 0.431 | 0.237 | 0.200 | 0.652 | 0.851 | Secreted | BMP |
-| 17 | ITGB1 | TGM2 | 0.428 | 0.319 | 0.200 | 0.812 | 0.548 | Secreted | Other |
-| 18 | ADGRE5 | CD55 | 0.426 | 0.298 | 1.000 (strict) | 0.184 | 0.000 | Intracellular | Other |
-| 19 | EGFR | ANXA1 | 0.415 | 0.038 | 0.200 | 0.923 | 0.798 | Secreted | EGF |
-| 20 | BMPR2 | BMP2 | 0.413 | 0.072 | 0.200 | 0.804 | 0.854 | Secreted | BMP |
+| 1 | ITGB1 | CD14 | 0.579 | 0.180 | 0.700 (relaxed) | 0.782 | 0.792 | Secreted | Other |
+| 2 | IL2RG | IL2 | 0.553 | 0.048 | 0.700 (relaxed) | 0.880 | 0.762 | Secreted | Other |
+| 3 | BMPR2 | BMP6 | 0.545 | 0.214 | 0.700 (relaxed) | 0.652 | 0.701 | Secreted | BMP |
+| 4 | UNC5B | NTN1 | 0.544 | 1.000 | 0.200 | 0.450 | 0.472 | Secreted | Other |
+| 5 | IL1RL2 | IL18 | 0.539 | 0.138 | 0.700 (relaxed) | 0.763 | 0.676 | Secreted | Other |
+| 6 | ACVR1 | BMP6 | 0.532 | 0.255 | 0.700 (relaxed) | 0.685 | 0.542 | Secreted | BMP/Activin |
+| 7 | IL2RG | IL15 | 0.527 | 0.072 | 0.700 (relaxed) | 0.843 | 0.636 | Secreted | Other |
+| 8 | ITGB1 | LAMC2 | 0.500 | 0.182 | 0.700 (relaxed) | 0.737 | 0.442 | Secreted | Other |
+| **9** | **FGFR2** | **FGF10** | **0.499** | 0.050 | 0.700 (relaxed) | 0.719 | 0.651 | **Secreted** | **FGF** |
+| 10 | ADGRE5 | CD55 | 0.487 | 0.502 | 1.000 (strict) | 0.184 | 0.000 | Intracellular | Other |
+| **11** | **FGFR2** | **FGF16** | **0.478** | 0.032 | 0.700 (relaxed) | 0.719 | 0.575 | **Secreted** | **FGF** |
+| 12 | OGFR | PENK | 0.469 | 0.752 | 0.200 | 0.498 | 0.417 | Secreted | Other |
+| 13 | BMPR2 | BMP4 | 0.460 | 0.330 | 0.200 | 0.652 | 0.851 | Secreted | BMP |
+| 14 | GRIN2D | IL16 | 0.459 | 0.090 | 0.700 (relaxed) | 0.689 | 0.422 | Secreted | Other |
+| 15 | BMPR2 | BMP2 | 0.459 | 0.224 | 0.200 | 0.804 | 0.854 | Secreted | BMP |
+| 16 | BMPR1A | BMP4 | 0.445 | 0.373 | 0.200 | 0.629 | 0.738 | Secreted | BMP |
+| 17 | FZD1 | MYOC | 0.443 | 0.121 | 0.700 (relaxed) | 0.583 | 0.401 | Secreted | Wnt |
+| 18 | BMPR1A | BMP2 | 0.439 | 0.249 | 0.200 | 0.781 | 0.741 | Secreted | BMP |
+| 19 | BMPR2 | BMP7 | 0.431 | 0.188 | 0.200 | 0.824 | 0.749 | Secreted | BMP |
+| 20 | EGFR | ANXA1 | 0.431 | 0.088 | 0.200 | 0.923 | 0.798 | Secreted | EGF |
 
 ### Positive Control Validation
 
-FGF10/FGFR2 ranks **#9/83** with fully automated score-based scoring -- no manual annotation. Comparison across scoring methods:
+FGF10/FGFR2 ranks **#9/77** with fully automated score-based scoring -- no manual annotation. Comparison across scoring methods:
 
 | Pair | Mismatch only | DGIdb-only | logFC-based | **Score-based (final)** |
 |------|:------------:|:----------:|:-----------:|:-----------------------:|
-| Fgfr2/Fgf10 | 77/83 | 27 | 13 | **9** |
-| Fgfr2/Fgf16 | 80/83 | -- | 20 | **11** |
-| Acvr1/Bmp6 | 23/83 | 11 | 5 | **10** |
-| Bmpr2/Bmp6 | 29/83 | 8 | 3 | **7** |
-| Unc5b/Ntn1 | 1/83 | 18 | 7 | **1** |
-| Bmpr2/Bmp2 | 25/83 | 20 | 18 | **20** |
+| Fgfr2/Fgf10 | 64/77 | 27 | 13 | **9** |
+| Fgfr2/Fgf16 | 70/77 | -- | 20 | **11** |
+| Acvr1/Bmp6 | 12/77 | 11 | 5 | **6** |
+| Bmpr2/Bmp6 | 21/77 | 8 | 3 | **3** |
+| Unc5b/Ntn1 | 1/77 | 18 | 7 | **4** |
+| Bmpr2/Bmp2 | 20/77 | 20 | 18 | **15** |
 
-Note: Tyro3/Gas6, Insr/Nampt, and Fgfr2/Fgf7 were removed from the 83 score-based mismatch pairs because their ligands did not meet the score < 0 (padj < 0.05) filter. This is expected: Wilcoxon scores correct for logFC artifacts in near-zero-expression genes, so some previously included pairs with inflated logFC no longer qualify.
+Note: Tyro3/Gas6, Insr/Nampt, and Fgfr2/Fgf7 were removed from the 77 score-based mismatch pairs because their ligands did not meet the score < 0 (padj < 0.05) filter. This is expected: Wilcoxon scores correct for logFC artifacts in near-zero-expression genes, so some previously included pairs with inflated logFC no longer qualify.
 
-The automated score places FGFR2/FGF10 at #9 (top 11%), up from #13 in the logFC-based analysis. This improvement reflects the removal of pairs whose mismatch signal was driven by logFC artifacts rather than genuine differential expression.
+The automated score places FGFR2/FGF10 at #9 (top 12%), up from #13 in the logFC-based analysis. This improvement reflects the removal of pairs whose mismatch signal was driven by logFC artifacts rather than genuine differential expression.
 
 ### Key Findings
 
-1. **FGF10/FGFR2 is cross-species conserved and in the top 11%.** Ranks #9/83 without manual input. FGFR2 is upregulated and FGF10 is downregulated in both mouse (significant) and human (directional trend).
+1. **FGF10/FGFR2 is cross-species conserved and in the top 12%.** Ranks #9/77 without manual input. FGFR2 is upregulated and FGF10 is downregulated in both mouse (significant) and human (directional trend).
 
-2. **BMP pathway pairs rank highly.** BMPR2/BMP6 (#7), ACVR1/BMP6 (#10), BMPR2/BMP2 (#20). Note: BMP4 is upregulated in human (opposite of mouse), so BMP4 pairs are NOT conserved.
+2. **BMP pathway pairs rank highly.** BMPR2/BMP6 (#3), ACVR1/BMP6 (#6), BMPR2/BMP2 (#15). Note: BMP4 is upregulated in human (opposite of mouse), so BMP4 pairs are NOT conserved.
 
-3. **Score-based filtering removes logFC artifacts.** The switch from logFC to Wilcoxon scores reduced mismatch pairs from 127 to 83. Pairs like TYRO3/GAS6 and INSR/NAMPT dropped out because their ligands' apparent downregulation was driven by near-zero expression artifacts, not genuine differential expression. UNC5B/NTN1 (#1) and OGFR/PENK (#2) now rank highest by mismatch composite.
+3. **Score-based filtering removes logFC artifacts.** The switch from logFC to Wilcoxon scores reduced mismatch pairs from 127 to 77. Pairs like TYRO3/GAS6 and INSR/NAMPT dropped out because their ligands' apparent downregulation was driven by near-zero expression artifacts, not genuine differential expression. UNC5B/NTN1 (#1) and OGFR/PENK (#2) now rank highest by mismatch composite.
 
-4. **Mismatch score has a systematic blind spot for sparse genes.** FGFR2/FGF10's mismatch composite is only 0.001 (rank 77/83), contributing just 0.2% of its final priority score. The #9 ranking is almost entirely driven by conservation + druggability + literature. This is not a failure of the scoring method — it reflects a fundamental limitation: FGFR2 is expressed in only 2–6% of cells, and FGF10 in 1–3%. Both Wilcoxon scores and logFC are bulk statistical tests that measure "how consistently does this gene differ across all cells." For genes expressed in <10% of cells, even a real biological difference produces a weak statistical signal because 90%+ of cells contribute zero to both groups. The wet lab validation of FGF10/FGFR2 may simply be ahead of what computational mismatch analysis can confirm at this expression level. This suggests that for sparse receptor-ligand pairs, alternative approaches (e.g., expression percentage-based metrics, or restricting analysis to expressing cells only) may be more appropriate than whole-population differential expression.
+4. **Mismatch score has a systematic blind spot for sparse genes.** FGFR2/FGF10's mismatch composite is only 0.050 (rank 64/77), contributing just 3% of its final priority score. The #9 ranking is still primarily driven by conservation + druggability + literature. This is not a failure of the scoring method — it reflects a fundamental limitation: FGFR2 is expressed in only 2–6% of cells, and FGF10 in 1–3%. Both Wilcoxon scores and logFC are bulk statistical tests that measure "how consistently does this gene differ across all cells." For genes expressed in <10% of cells, even a real biological difference produces a weak statistical signal because 90%+ of cells contribute zero to both groups. The wet lab validation of FGF10/FGFR2 may simply be ahead of what computational mismatch analysis can confirm at this expression level. This suggests that for sparse receptor-ligand pairs, alternative approaches (e.g., expression percentage-based metrics, or restricting analysis to expressing cells only) may be more appropriate than whole-population differential expression.
 
 5. **Human data is a bottleneck.** Only 1 conserved pair reaches strict significance in both species (ADGRE5/CD55). All other conservation calls rely on directional consistency in human (trend level). Multi-patient human MI data would substantially strengthen these findings.
 
@@ -291,8 +293,8 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 ### Result files
 | File | Description |
 |------|-------------|
-| `results/mismatch/therapeutic_targets_scores.csv` | **Final ranking (score-based)**: 83 pairs, fully automated scoring with Wilcoxon scores |
-| `results/mismatch/mouse_lr_mismatch_scores.csv` | 83 mouse pairs with score-based composite |
+| `results/mismatch/therapeutic_targets_scores.csv` | **Final ranking (score-based)**: 77 pairs, fully automated scoring with Wilcoxon scores |
+| `results/mismatch/mouse_lr_mismatch_scores.csv` | 77 mouse pairs with score-based composite |
 | `results/mismatch/cross_species_lr_mismatch_scores.csv` | All 1,953 L-R pairs with both species scores |
 | `results/mismatch/cross_species_conserved_scores.csv` | 81 conserved mismatch pairs (score-based) |
 | `results/mismatch/therapeutic_targets_corrected.csv` | Previous ranking (logFC-based): 127 pairs |
