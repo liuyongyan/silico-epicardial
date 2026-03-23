@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Figure 2: Receptor Differential Expression Landscape (Mouse)
+Figure 2: Receptor Differential Expression Landscape (Mouse) — OR-based V2
 
-Panel A: Volcano Plot - All Receptors (Wilcoxon scores on x-axis)
-Panel B: Receptor Ranking Bar Plot (Top 20 by score)
-Panel C: Pathway-Level Summary
+Panel A: Volcano Plot - log(OR) vs -log10(Fisher p)
+Panel B: Waterfall of significantly upregulated receptors ranked by log(OR)
+Panel C: Pathway-Level Summary (OR > 1 up, OR < 1 down, Fisher p < 0.05)
 """
 
 import pandas as pd
@@ -18,8 +18,16 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 OUTPUT_DIR = PROJECT_DIR / "results" / "figures"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Load data
-rec = pd.read_csv(PROJECT_DIR / "results" / "mouse" / "receptor_rankings_by_logfc.csv")
+# Load OR data
+or_data = pd.read_csv(PROJECT_DIR / "results" / "mismatch" / "mouse_gene_odds_ratios.csv")
+
+# Load receptor list from the old rankings file (to know which genes are receptors)
+rec_list = pd.read_csv(PROJECT_DIR / "results" / "mouse" / "receptor_rankings_by_logfc.csv")
+receptor_genes = set(rec_list['names'].unique())
+
+# Filter OR data to receptor genes only
+rec = or_data[or_data['gene'].isin(receptor_genes)].copy()
+print(f"Receptors found in OR data: {len(rec)}/{len(receptor_genes)}")
 
 # Pathway annotation
 pathway_map = {
@@ -42,19 +50,12 @@ pathway_map = {
     'Nrp1':'Sema/VEGF','Nrp2':'Sema/VEGF',
     'Plxna4':'Sema','Plxnb2':'Sema',
 }
-rec['pathway'] = rec['names'].map(pathway_map).fillna('Other')
+rec['pathway'] = rec['gene'].map(pathway_map).fillna('Other')
 
-# Panel A uses logFC (standard volcano), but filter out inflated artifacts
-# Artifact detection: |logFC/score| ratio > 3 indicates near-zero denominator artifact
-rec['logfc_score_ratio'] = rec['logfoldchanges'].abs() / (rec['scores'].abs() + 0.01)
-rec['is_artifact'] = rec['logfc_score_ratio'] > 3
-rec_clean = rec[~rec['is_artifact']].copy()
-print(f"Filtered {rec['is_artifact'].sum()}/{len(rec)} artifact genes (logFC/score ratio > 3)")
+# Compute volcano plot columns
+rec['neg_log_p'] = -np.log10(rec['fisher_p'].clip(lower=1e-300))
 
-rec_clean['logfc_capped'] = np.clip(rec_clean['logfoldchanges'], -15, 15)
-rec_clean['neg_log_padj'] = -np.log10(rec_clean['pvals_adj'].clip(lower=1e-300))
-
-# Highlight genes
+# Highlights
 highlights = ['Fgfr2','Bmpr2','Fzd2','Acvr1','Egfr','Tgfbr1','Notch1','Kdr','Pdgfra','Epha7']
 
 # Color map for pathways
@@ -67,28 +68,28 @@ pw_colors = {
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-# ---- Panel A: Volcano Plot (logFC x-axis, artifacts removed) ----
+# ---- Panel A: Volcano Plot (log(OR) x-axis, -log10(Fisher p) y-axis) ----
 ax = axes[0]
 # Background (Other)
-other = rec_clean[rec_clean['pathway'] == 'Other']
-ax.scatter(other['logfc_capped'], other['neg_log_padj'],
+other = rec[rec['pathway'] == 'Other']
+ax.scatter(other['log_or'], other['neg_log_p'],
            c='#D5D8DC', s=8, alpha=0.3, zorder=1)
 
 # Colored by pathway
 for pw, color in pw_colors.items():
     if pw == 'Other':
         continue
-    sub = rec_clean[rec_clean['pathway'] == pw]
+    sub = rec[rec['pathway'] == pw]
     if len(sub) > 0:
-        ax.scatter(sub['logfc_capped'], sub['neg_log_padj'],
+        ax.scatter(sub['log_or'], sub['neg_log_p'],
                    c=color, s=20, alpha=0.7, label=pw, zorder=2)
 
 # Highlight specific genes
 for gene in highlights:
-    row = rec_clean[rec_clean['names'] == gene]
+    row = rec[rec['gene'] == gene]
     if len(row) > 0:
         r = row.iloc[0]
-        ax.annotate(gene, (r['logfc_capped'], r['neg_log_padj']),
+        ax.annotate(gene, (r['log_or'], r['neg_log_p']),
                     fontsize=7, fontweight='bold',
                     xytext=(5, 5), textcoords='offset points',
                     arrowprops=dict(arrowstyle='-', color='black', lw=0.5),
@@ -96,19 +97,19 @@ for gene in highlights:
 
 ax.axhline(-np.log10(0.05), color='gray', linestyle='--', linewidth=0.5)
 ax.axvline(0, color='gray', linestyle='--', linewidth=0.5)
-ax.set_xlabel('log₂FC (Activated vs Quiescent)', fontsize=10)
-ax.set_ylabel('-log₁₀(padj)', fontsize=10)
-ax.set_title('A. Receptor Volcano Plot (artifacts removed)', fontsize=12, fontweight='bold')
+ax.set_xlabel('log(OR) (Activated vs Quiescent)', fontsize=10)
+ax.set_ylabel('-log\u2081\u2080(Fisher p)', fontsize=10)
+ax.set_title('A. Receptor Volcano Plot (OR-based)', fontsize=12, fontweight='bold')
 ax.legend(fontsize=6, loc='upper left', ncol=2, framealpha=0.8)
 
-# ---- Panel B: Waterfall — all sig upregulated receptors, highlight key genes ----
+# ---- Panel B: Waterfall — all sig upregulated receptors by log(OR) ----
 ax = axes[1]
-sig_up = rec[(rec['scores'] > 0) & (rec['pvals_adj'] < 0.05)].sort_values('scores', ascending=False).reset_index(drop=True)
+sig_up = rec[(rec['log_or'] > 0) & (rec['fisher_p'] < 0.05)].sort_values('log_or', ascending=False).reset_index(drop=True)
 n_up = len(sig_up)
 
 # Plot waterfall curve
-ax.fill_between(range(n_up), sig_up['scores'], alpha=0.15, color='#E74C3C')
-ax.plot(range(n_up), sig_up['scores'], color='#E74C3C', linewidth=0.8, alpha=0.6)
+ax.fill_between(range(n_up), sig_up['log_or'], alpha=0.15, color='#E74C3C')
+ax.plot(range(n_up), sig_up['log_or'], color='#E74C3C', linewidth=0.8, alpha=0.6)
 
 # Highlight key receptors
 key_genes = {
@@ -119,44 +120,43 @@ key_genes = {
     'Egfr': ('#34495E', 'EGF'),
     'Notch1': ('#E67E22', 'Notch'),
     'Epha7': ('#D35400', 'Ephrin'),
-    'Tgfbr1': ('#9B59B6', 'TGF-β'),
+    'Tgfbr1': ('#9B59B6', 'TGF-\u03b2'),
 }
 
 for gene, (color, pw) in key_genes.items():
-    idx = sig_up[sig_up['names'] == gene].index
+    idx = sig_up[sig_up['gene'] == gene].index
     if len(idx) > 0:
         i = idx[0]
-        score = sig_up.loc[i, 'scores']
+        val = sig_up.loc[i, 'log_or']
         rank = i + 1
-        ax.scatter(i, score, c=color, s=60, zorder=3, edgecolors='black', linewidths=0.5)
-        # Stagger labels to avoid overlap
+        ax.scatter(i, val, c=color, s=60, zorder=3, edgecolors='black', linewidths=0.5)
         y_offset = 8 if rank % 2 == 0 else -12
         ax.annotate(f'{gene}\n(#{rank})',
-                    (i, score), fontsize=7, fontweight='bold', color=color,
+                    (i, val), fontsize=7, fontweight='bold', color=color,
                     ha='center', va='bottom' if y_offset > 0 else 'top',
                     xytext=(0, y_offset), textcoords='offset points')
 
-ax.set_xlabel(f'Receptor Rank (1–{n_up} upregulated)', fontsize=10)
-ax.set_ylabel('Wilcoxon Score', fontsize=10)
-ax.set_title(f'B. All {n_up} Upregulated Receptors', fontsize=12, fontweight='bold')
+ax.set_xlabel(f'Receptor Rank (1\u2013{n_up} upregulated)', fontsize=10)
+ax.set_ylabel('log(OR)', fontsize=10)
+ax.set_title(f'B. All {n_up} Upregulated Receptors (OR-based)', fontsize=12, fontweight='bold')
 ax.set_xlim(-5, n_up + 5)
 
-# ---- Panel C: Pathway-Level Summary ----
+# ---- Panel C: Pathway-Level Summary (OR-based) ----
 ax = axes[2]
-sig = rec[rec['pvals_adj'] < 0.05]
+sig = rec[rec['fisher_p'] < 0.05]
 pathways_of_interest = ['FGF','BMP','Wnt','TGF-\u03b2','PDGF','VEGF','Notch','EGF','Ephrin','TAM','Sema']
 
 pw_data = []
 for pw in pathways_of_interest:
     sub = sig[sig['pathway'] == pw]
-    n_up = (sub['scores'] > 0).sum()
-    n_down = (sub['scores'] < 0).sum()
-    pw_data.append({'pathway': pw, 'up': n_up, 'down': -n_down})
+    n_up_pw = (sub['odds_ratio'] > 1).sum()
+    n_down_pw = (sub['odds_ratio'] < 1).sum()
+    pw_data.append({'pathway': pw, 'up': n_up_pw, 'down': -n_down_pw})
 
 pw_df = pd.DataFrame(pw_data)
 x = range(len(pw_df))
-ax.barh(x, pw_df['up'], color='#E74C3C', alpha=0.7, label='Upregulated')
-ax.barh(x, pw_df['down'], color='#3498DB', alpha=0.7, label='Downregulated')
+ax.barh(x, pw_df['up'], color='#E74C3C', alpha=0.7, label='Upregulated (OR > 1)')
+ax.barh(x, pw_df['down'], color='#3498DB', alpha=0.7, label='Downregulated (OR < 1)')
 ax.set_yticks(x)
 ax.set_yticklabels(pw_df['pathway'], fontsize=9)
 ax.axvline(0, color='black', linewidth=0.5)

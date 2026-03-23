@@ -265,6 +265,77 @@ Same rationale as V1:
 
 ---
 
+## Figures
+
+### Figure 1: Cell State Landscape and FGF Family Expression (Mouse)
+
+![Figure 1](results/figures/fig1_cell_states_fgf.png)
+
+- **Panel A**: UMAP of 112,676 mouse epicardial cells colored by cell state (blue=quiescent, red=activated). Subsampled to 50K for plotting.
+- **Panel B**: FGFR2 expression on UMAP. Co-localizes with activated cluster (upper right).
+- **Panel C**: FGF10 expression on UMAP. Enriched in quiescent clusters (lower left).
+- **Panel D**: Violin plots of FGF family genes by cell state (expressing cells only; zero-expression cells removed to reveal distribution shape). FGFR1 excluded due to much higher expression scale. Below each violin: % of cells expressing and overall fold change. FGFR2 is the **only** FGF family gene upregulated in activated cells (3.0x↑, driven by increase in % expressing from 2% to 6%); FGF10 is strongly downregulated (0.2x↓).
+
+**Data**: Quaife-Ryan 2021 (E-MTAB-10035), `mouse_quaife_ryan_analyzed.h5ad`
+
+### Figure 2: Receptor Differential Expression Landscape (Mouse, OR-based)
+
+![Figure 2](results/figures/fig2_receptor_de_landscape.png)
+
+- **Panel A**: Volcano plot of receptor genes using log(OR) on x-axis and -log₁₀(Fisher p) on y-axis. OR directly measures the change in proportion of expressing cells between activated and quiescent states. Key receptors labeled and colored by signaling pathway.
+- **Panel B**: Waterfall plot of all significantly upregulated receptors (OR > 1, Fisher p < 0.05) ranked by log(OR). FGFR2 (log(OR)=1.15, rank ~30) is highlighted — its position reflects a 3× proportion change (2%→6%) which is comparable to well-known receptors like ACVR1 (log(OR)=1.23) and higher than BMPR2 (log(OR)=0.86).
+- **Panel C**: Pathway-level summary showing number of receptors with OR > 1 (upregulated) vs OR < 1 (downregulated), Fisher p < 0.05.
+
+**Data**: `mouse_gene_odds_ratios.csv`
+
+### Figure 3: "Primed But Starved" Ligand-Receptor Mismatch (OR-based)
+
+![Figure 3](results/figures/fig3_mismatch.png)
+
+- **Panel A**: Concept diagram illustrating the hypothesis (unchanged from V1).
+- **Panel B**: Heatmap of top mismatch pairs showing receptor log(OR) (red) and ligand log(OR) (blue). FGFR2/FGF10 appears at the top — FGFR2 has the strongest combined mismatch because both its receptor OR (3.15) and ligand 1/OR (1/0.19=5.3) are large.
+- **Panel C**: Quadrant scatter plot of all high-confidence L-R pairs. X=receptor log(OR), Y=ligand log(OR). The lower-right quadrant (red shading) = "primed but starved" pairs. FGFR2/FGF10 is clearly in Q4 with large separation from origin. Conserved pairs highlighted in red.
+- **Panel D**: Top mismatch pairs ranked by OR composite = (log(OR_r) - log(OR_l)) × db_weight. FGFR2/FGF10 ranks #1. Colored by pathway.
+
+**Data**: `mouse_gene_odds_ratios.csv`, `mouse_lr_mismatch_scores.csv`
+
+### Figure 4: Geneformer In Silico Perturbation — SKIPPED
+
+See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationale.
+
+### Figure 5: Cross-Species Conservation (OR-based)
+
+![Figure 5](results/figures/fig5_cross_species.png)
+
+- **Panel A**: Mouse vs Human receptor log(OR) scatter. OR is inherently sample-size independent (unlike z-scores), so no normalization is needed for cross-species comparison. FGFR2, NOTCH1, BMPR1A and other key receptors labeled in the upper-right quadrant (upregulated in both species).
+- **Panel B**: Conservation heatmap for top 20 conserved pairs showing log(OR) for receptor and ligand in both species. Mouse columns show larger absolute values (stronger effects); human columns show same direction but smaller magnitude. FGFR2/FGF10 and FGFR2/FGF16 both show the conserved pattern.
+- **Panel C**: Venn diagram showing overlap of mismatch pairs between species. 206 mouse-only, 407 human-only, 81 conserved.
+- **Panel D**: Top 10 therapeutic targets table with OR-based priority score (30% mismatch + 30% conservation + 20% druggability + 20% literature). FGFR2/FGF10 ranks #1 with score 0.753.
+
+**Data**: `mouse_gene_odds_ratios.csv`, `human_gene_odds_ratios.csv`, `gene_scores_corrected.csv`
+
+### Supplementary Figure 1: Cell State Classification Method (Mouse)
+
+![Supp Figure 1](results/figures/supp1_cell_state_classification.png)
+
+- **Panel A**: Signature gene expression heatmap (z-scored per gene).
+- **Panel B**: GMM threshold selection on state_potential.
+- **Panel C**: Activation probability distribution by condition.
+
+**Data**: `mouse_quaife_ryan_analyzed.h5ad`
+
+### Supplementary Figure 2: L-R Database Composition
+
+![Supp Figure 2](results/figures/supp2_lr_database.png)
+
+- **Panel A**: Database consensus distribution.
+- **Panel B**: Database coverage (all vs high-confidence).
+- **Panel C**: L-R pairs by annotated pathway.
+
+**Data**: `curated_lr_pairs_mouse.csv`
+
+---
+
 ## Output Files
 
 ### V2 result files
