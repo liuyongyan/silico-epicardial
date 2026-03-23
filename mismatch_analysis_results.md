@@ -232,9 +232,9 @@ FGFR2/FGF10 ranks **40/81** by avg mismatch score (0.024), **34/81** for FGFR2/F
 
 ![Figure 2](results/figures/fig2_receptor_de_landscape.png)
 
-- **Panel A**: Volcano plot of 1,310 receptor genes. X-axis shows Wilcoxon score (z-normalized U statistic). Key receptors labeled (FGFR2, BMPR2, ACVR1, EGFR, etc.). Colored by signaling pathway.
-- **Panel B**: Top 20 upregulated receptors by Wilcoxon score. FGFR2 highlighted with red border. Pathway annotated for each.
-- **Panel C**: Pathway-level summary showing number of significantly upregulated vs downregulated receptors per pathway. BMP and Ephrin have the most upregulated receptors.
+- **Panel A**: Volcano plot of receptor genes (125 logFC-artifact genes removed where |logFC/score| ratio > 3). X-axis: log₂FC, Y-axis: -log₁₀(padj). Key receptors labeled. Colored by signaling pathway.
+- **Panel B**: Waterfall plot of all 1,057 significantly upregulated receptors ranked by Wilcoxon score. Key receptors highlighted with rank labels. FGFR2 sits in the tail of the curve — its Wilcoxon score (12.1) is modest compared to top receptors like Palld (190) or Itgb1 (118), consistent with its low expression in only 2–6% of cells. The steep drop-off shows that only a small number of receptors have strong statistical signal; the majority (including FGFR2) cluster in the low-score region.
+- **Panel C**: Pathway-level summary showing number of significantly upregulated vs downregulated receptors per pathway. Nearly all annotated signaling receptors are upregulated in the activated state (consistent with the EMT/mesenchymal phenotype); only TGF-β, PDGF, and VEGF have any downregulated members.
 
 **Data**: `receptor_rankings_by_logfc.csv` (Activated vs Quiescent, Wilcoxon scores)
 
