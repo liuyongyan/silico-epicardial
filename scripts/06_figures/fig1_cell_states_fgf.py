@@ -114,7 +114,7 @@ ax.set_title('C. FGF10 Expression', fontsize=12, fontweight='bold')
 # ---- Panel D: Bar chart of mean expression (all cells, incl. zeros) ----
 ax = fig.add_subplot(gs[1, 1])
 
-genes_to_plot = ['Fgf1', 'Fgf2', 'Fgf7', 'Fgf10', 'Fgfr2']
+genes_to_plot = ['Fgf1', 'Fgf2', 'Fgf7', 'Fgf10', 'Fgfr1', 'Fgfr2']
 genes_to_plot = [g for g in genes_to_plot if g in obs_df.columns]
 
 mean_q = []
