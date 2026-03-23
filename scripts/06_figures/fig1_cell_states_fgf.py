@@ -162,11 +162,11 @@ ax.legend([Patch(color='#3498DB', alpha=0.7), Patch(color='#E74C3C', alpha=0.7)]
 
 # Add % expressing labels below each violin
 for i, gene in enumerate(genes_to_plot):
-    ax.text(i - width/2, -0.3, f'{pct_q[i]:.0f}%', fontsize=7, ha='center', color='#3498DB', fontweight='bold')
-    ax.text(i + width/2, -0.3, f'{pct_a[i]:.0f}%', fontsize=7, ha='center', color='#E74C3C', fontweight='bold')
+    ax.text(i - width/2, -0.5, f'{pct_q[i]:.0f}%', fontsize=10, ha='center', color='#1A5276', fontweight='bold')
+    ax.text(i + width/2, -0.5, f'{pct_a[i]:.0f}%', fontsize=10, ha='center', color='#922B21', fontweight='bold')
 
-ax.text(len(genes_to_plot)/2, -0.6, '% of cells expressing', fontsize=8, ha='center', color='#555', style='italic')
-ax.set_ylim(-0.8, None)
+ax.text(len(genes_to_plot)/2 - 0.5, -1.0, '% of cells expressing', fontsize=9, ha='center', color='#2C3E50', fontweight='bold')
+ax.set_ylim(-1.3, None)
 
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.png', dpi=200, bbox_inches='tight')
 plt.savefig(OUTPUT_DIR / 'fig1_cell_states_fgf.pdf', bbox_inches='tight')
