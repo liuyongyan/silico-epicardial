@@ -127,31 +127,34 @@ key_genes = {
     'Tgfbr1': ('#9B59B6', 'TGF-\u03b2'),
 }
 
-# Manual offsets to avoid label overlap
-label_offsets = {
-    'Fgfr2': (30, 15),
-    'Bmpr2': (-50, 20),
-    'Acvr1': (30, -15),
-    'Fzd2': (-50, -20),
-    'Egfr': (30, 25),
-    'Notch1': (-50, 10),
-    'Epha7': (30, -25),
-    'Tgfbr1': (-50, -10),
-}
-
+# Collect gene positions, sort by rank, then stagger labels to upper-right
+gene_positions = []
 for gene, (color, pw) in key_genes.items():
     idx = sig_up[sig_up['names'] == gene].index
     if len(idx) > 0:
         i = idx[0]
         val = sig_up.loc[i, 'log_or']
-        rank = i + 1
-        ax.scatter(i, val, c=color, s=60, zorder=3, edgecolors='black', linewidths=0.5)
-        offset = label_offsets.get(gene, (0, 10))
-        ax.annotate(f'{gene} (#{rank})',
-                    (i, val), fontsize=7, fontweight='bold', color=color,
-                    ha='center',
-                    xytext=offset, textcoords='offset points',
-                    arrowprops=dict(arrowstyle='->', color=color, lw=0.8))
+        gene_positions.append({'gene': gene, 'i': i, 'val': val, 'color': color, 'rank': i+1})
+
+# Sort by rank (x position) so we can stagger y-offsets
+gene_positions.sort(key=lambda x: x['i'])
+
+# Place labels to upper-right, stagger vertically
+y_label_start = sig_up['log_or'].max() * 0.95
+y_step = sig_up['log_or'].max() * 0.08
+
+for idx_g, gp in enumerate(gene_positions):
+    ax.scatter(gp['i'], gp['val'], c=gp['color'], s=60, zorder=3,
+               edgecolors='black', linewidths=0.5)
+    # Label y position: stagger from top
+    label_y = y_label_start - idx_g * y_step
+    label_x = gp['i'] + n_up * 0.03
+    ax.annotate(f"{gp['gene']} (#{gp['rank']})",
+                (gp['i'], gp['val']),
+                xytext=(label_x, label_y),
+                fontsize=7, fontweight='bold', color=gp['color'],
+                arrowprops=dict(arrowstyle='->', color=gp['color'], lw=0.7),
+                zorder=4)
 
 ax.set_xlabel(f'Receptor Rank (1\u2013{n_up} upregulated)', fontsize=10)
 ax.set_ylabel('log(OR)', fontsize=10)
