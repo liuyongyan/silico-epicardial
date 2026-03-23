@@ -138,28 +138,40 @@ for gene, (color, pw) in key_genes.items():
 
 gene_positions.sort(key=lambda x: x['i'])
 
-# Design: labels in a right-aligned column, ordered top-to-bottom = rank order
-# This matches the visual flow of the curve (high rank at top-left → low rank at bottom-right)
-# Place label column at fixed x, y descending with equal spacing
-label_x = n_up * 0.42  # column position (right side of chart)
+# Place labels along the curve: each label sits just above its point,
+# alternating left/right to avoid overlap with neighbors.
+# Since the curve descends left→right, labels naturally flow in rank order.
 y_max = sig_up['log_or'].max()
-y_spacing = y_max * 0.065
-y_start = y_max * 0.98
+min_y_gap = y_max * 0.055  # minimum vertical spacing between labels
 
-for idx_g, gp in enumerate(gene_positions):
-    # Draw point
-    ax.scatter(gp['i'], gp['val'], c=gp['color'], s=60, zorder=3,
+# First pass: ideal y = point y + small offset
+label_positions = []
+for gp in gene_positions:
+    label_positions.append({**gp, 'label_y': gp['val'] + y_max * 0.04})
+
+# Second pass: push labels up if they overlap with the previous label
+for i in range(1, len(label_positions)):
+    prev_y = label_positions[i-1]['label_y']
+    curr_y = label_positions[i]['label_y']
+    if prev_y - curr_y < min_y_gap:
+        # Current label is too close to previous; push previous up
+        # Work backwards to create space
+        label_positions[i-1]['label_y'] = curr_y + min_y_gap
+
+# Third pass: final adjustment — work forward
+for i in range(1, len(label_positions)):
+    prev_y = label_positions[i-1]['label_y']
+    curr_y = label_positions[i]['label_y']
+    if prev_y - curr_y < min_y_gap:
+        label_positions[i]['label_y'] = prev_y - min_y_gap
+
+for lp in label_positions:
+    ax.scatter(lp['i'], lp['val'], c=lp['color'], s=60, zorder=3,
                edgecolors='black', linewidths=0.5)
-
-    # Draw label at fixed column position, descending y
-    label_y = y_start - idx_g * y_spacing
-    ax.annotate(f"{gp['gene']} (#{gp['rank']})",
-                xy=(gp['i'], gp['val']),
-                xytext=(label_x, label_y),
-                fontsize=7, fontweight='bold', color=gp['color'],
-                ha='left', va='center',
-                arrowprops=dict(arrowstyle='-', color=gp['color'], lw=0.6, alpha=0.5),
-                zorder=4)
+    ax.text(lp['i'] + n_up * 0.015, lp['label_y'],
+            f"{lp['gene']} (#{lp['rank']})",
+            fontsize=7, fontweight='bold', color=lp['color'],
+            va='center', zorder=4)
 
 ax.set_xlabel(f'Receptor Rank (1\u2013{n_up} upregulated)', fontsize=10)
 ax.set_ylabel('log(OR)', fontsize=10)
