@@ -266,6 +266,16 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 
 **Data**: `cross_species_lr_mismatch_scores.csv`, `therapeutic_targets_scores.csv`
 
+### Supplementary Figure 1: Cell State Classification Method (Mouse)
+
+![Supp Figure 1](results/figures/supp1_cell_state_classification.png)
+
+- **Panel A**: Signature gene expression heatmap (z-scored per gene). Top: quiescent markers (Wt1, Upk3b, Msln, Krt19, Cdh1, Cldn1, Cldn3, Tjp1, Ocln) show higher expression in quiescent cells. Bottom: activated/EMT markers (Snai1, Snai2, Twist1, Vim, Fn1, Col1a1, Col3a1, Postn, Acta2) show higher expression in activated cells. Raw mean values annotated in each cell.
+- **Panel B**: GMM threshold selection on state_potential (= activated_score − quiescent_score). Two Gaussian components fitted: low component (blue, quiescent) and high component (red, activated). Black dashed line = threshold at mean of two component means.
+- **Panel C**: Activation probability distribution by condition. MI cells (red, mean=0.76) are strongly shifted right compared to Normal cells (blue, mean=0.23), confirming that MI drives epicardial activation.
+
+**Data**: Quaife-Ryan 2021, `mouse_quaife_ryan_analyzed.h5ad`
+
 ### Supplementary Figure 2: L-R Database Composition
 
 ![Supp Figure 2](results/figures/supp2_lr_database.png)
@@ -281,6 +291,7 @@ See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationa
 | Script | Figure |
 |--------|--------|
 | `scripts/06_figures/fig1_cell_states_fgf.py` | Figure 1 |
+| `scripts/06_figures/supp1_cell_state_classification.py` | Supplementary Figure 1 |
 | `scripts/06_figures/fig2_receptor_de_landscape.py` | Figure 2 |
 | `scripts/06_figures/fig3_mismatch.py` | Figure 3 |
 | `scripts/06_figures/fig5_cross_species.py` | Figure 5 |
