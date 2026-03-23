@@ -213,6 +213,77 @@ FGFR2/FGF10 ranks **39/71** by avg mismatch score (5.90), **54/71** for FGFR2/FG
 
 ---
 
+## Figures
+
+### Figure 1: Cell State Landscape and FGF Family Expression (Mouse)
+
+![Figure 1](results/figures/fig1_cell_states_fgf.png)
+
+- **Panel A**: UMAP of 112,676 mouse epicardial cells colored by cell state (blue=quiescent, red=activated). Subsampled to 50K for plotting.
+- **Panel B**: FGFR2 expression on UMAP. Co-localizes with activated cluster (upper right).
+- **Panel C**: FGF10 expression on UMAP. Enriched in quiescent clusters (lower left).
+- **Panel D**: Violin plots of FGF family genes by cell state. FGFR2 is the **only** FGF family gene upregulated in activated cells; FGF10, FGF1, FGF7 are all higher in quiescent.
+
+**Data**: Quaife-Ryan 2021 (E-MTAB-10035), `mouse_quaife_ryan_analyzed.h5ad`
+
+### Figure 2: Receptor Differential Expression Landscape (Mouse)
+
+![Figure 2](results/figures/fig2_receptor_de_landscape.png)
+
+- **Panel A**: Volcano plot of 1,310 receptor genes. Key receptors labeled (FGFR2, BMPR2, ACVR1, EGFR, etc.). Colored by signaling pathway.
+- **Panel B**: Top 20 upregulated receptors by logFC. FGFR2 highlighted with red border. Pathway annotated for each.
+- **Panel C**: Pathway-level summary showing number of significantly upregulated vs downregulated receptors per pathway. BMP and Ephrin have the most upregulated receptors.
+
+**Data**: `receptor_rankings_by_logfc.csv` (Activated vs Quiescent, Wilcoxon)
+
+### Figure 3: "Primed But Starved" Ligand-Receptor Mismatch
+
+![Figure 3](results/figures/fig3_mismatch.png)
+
+- **Panel A**: Concept diagram illustrating the hypothesis. Normal: ligand high, receptor low → balanced signaling. Post-MI: ligand depleted, receptor upregulated → insufficient signal. Therapeutic strategy: deliver depleted ligands.
+- **Panel B**: Heatmap of top mismatch pairs showing receptor logFC (red) and ligand logFC (blue). FGFR2/FGF10 included at bottom.
+- **Panel C**: Quadrant scatter plot of all L-R pairs (mouse). X=receptor logFC, Y=ligand logFC. The lower-right quadrant (red shading) = "primed but starved" pairs. Conserved pairs highlighted in red.
+- **Panel D**: Top mismatch pairs ranked by refined composite score. Colored by pathway.
+
+**Data**: `mouse_lr_mismatch_refined.csv`, `cross_species_lr_mismatch.csv`
+
+### Figure 4: Geneformer In Silico Perturbation — SKIPPED
+
+See [Geneformer section](#geneformer-in-silico-perturbation-skipped) for rationale.
+
+### Figure 5: Cross-Species Conservation
+
+![Figure 5](results/figures/fig5_cross_species.png)
+
+- **Panel A**: Mouse vs Human receptor logFC scatter. Red points = receptors upregulated in both species. Key conserved receptors labeled (FGFR2, EPHA7, TYRO3, NOTCH1, etc.).
+- **Panel B**: Conservation heatmap for top 20 conserved pairs. Columns: Mouse Receptor logFC, Mouse Ligand logFC, Human Receptor logFC, Human Ligand logFC. Red=up, blue=down. Pattern: mouse shows strong signal, human shows same direction but weaker.
+- **Panel C**: Venn diagram showing overlap of mismatch pairs between species. 231 mouse-only, 376 human-only, 100 conserved.
+- **Panel D**: Top 10 therapeutic targets table (fully automated scoring) with rank, score, conservation status, druggability, and pathway.
+
+**Data**: `cross_species_lr_mismatch.csv`, `therapeutic_targets_corrected.csv`
+
+### Supplementary Figure 2: L-R Database Composition
+
+![Supp Figure 2](results/figures/supp2_lr_database.png)
+
+- **Panel A**: Distribution of database consensus (n_db). Red dashed line marks high-confidence threshold (n_db ≥ 3). Most pairs (2,999) supported by only 1 database; 528 supported by all 5.
+- **Panel B**: Database coverage. All pairs: 5,669 pairs / 1,269 ligands / 1,194 receptors. High-confidence subset: 1,953 pairs / 1,199 ligands / 1,194 receptors.
+- **Panel C**: Pathway distribution of L-R pairs. "Other" dominates (86%); among annotated pathways, Wnt and BMP/TGFb have the most pairs.
+
+**Data**: `curated_lr_pairs_mouse.csv`
+
+### Figure scripts
+
+| Script | Figure |
+|--------|--------|
+| `scripts/06_figures/fig1_cell_states_fgf.py` | Figure 1 |
+| `scripts/06_figures/fig2_receptor_de_landscape.py` | Figure 2 |
+| `scripts/06_figures/fig3_mismatch.py` | Figure 3 |
+| `scripts/06_figures/fig5_cross_species.py` | Figure 5 |
+| `scripts/06_figures/supp2_lr_database.py` | Supplementary Figure 2 |
+
+---
+
 ## Output Files
 
 ### Result files
